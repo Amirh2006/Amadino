@@ -5,8 +5,15 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
-import androidx.room.migration.AutoMigration
 import com.amadino.app.data.local.converter.Converters
+import com.amadino.app.data.local.dao.AttendanceDao
+import com.amadino.app.data.local.dao.ClassTimeDao
+import com.amadino.app.data.local.dao.PaymentDao
+import com.amadino.app.data.local.dao.ShiftDao
+import com.amadino.app.data.local.dao.SmsCounterDao
+import com.amadino.app.data.local.dao.SmsLogDao
+import com.amadino.app.data.local.dao.StudentDao
+import com.amadino.app.data.local.dao.WeekDayDao
 import com.amadino.app.data.local.entity.AttendanceEntity
 import com.amadino.app.data.local.entity.ClassTimeEntity
 import com.amadino.app.data.local.entity.PaymentEntity
