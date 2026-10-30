@@ -1,4 +1,4 @@
-package com.amadino.app.data.local.repository
+package com.amadino.app.data.repository
 
 import com.amadino.app.data.local.dao.PaymentDao
 import com.amadino.app.data.local.dao.StudentDao
