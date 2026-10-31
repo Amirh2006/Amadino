@@ -11,6 +11,9 @@ class AttendanceRepository private constructor(
     fun getByClassTimeAndDate(classTimeId: Int, attendanceDate: Long): Flow<List<AttendanceEntity>> =
         attendanceDao.getByClassTimeAndDate(classTimeId, attendanceDate)
 
+    fun getByDate(attendanceDate: Long): Flow<List<AttendanceEntity>> =
+        attendanceDao.getByDate(attendanceDate)
+
     fun getByStudentClassTimeDate(
         studentId: Int,
         classTimeId: Int,

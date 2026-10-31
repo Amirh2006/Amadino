@@ -15,6 +15,9 @@ interface PaymentDao {
     @Query("SELECT * FROM payment WHERE student_id = :studentId ORDER BY payment_date DESC")
     fun getByStudent(studentId: Int): Flow<List<PaymentEntity>>
 
+    @Query("SELECT * FROM payment ORDER BY payment_date DESC")
+    fun getAll(): Flow<List<PaymentEntity>>
+
     @Query("SELECT * FROM payment WHERE id = :id")
     fun getById(id: Int): Flow<PaymentEntity?>
 

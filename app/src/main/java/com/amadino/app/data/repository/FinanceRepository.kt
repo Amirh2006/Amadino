@@ -14,6 +14,7 @@ class FinanceRepository private constructor(
     fun getDebtors(): Flow<List<StudentEntity>> = studentDao.getDebtors()
     fun getPaymentsByStudent(studentId: Int): Flow<List<PaymentEntity>> =
         paymentDao.getByStudent(studentId)
+    fun getAllPayments(): Flow<List<PaymentEntity>> = paymentDao.getAll()
 
     suspend fun insertPayment(payment: PaymentEntity): Long = paymentDao.insert(payment)
 

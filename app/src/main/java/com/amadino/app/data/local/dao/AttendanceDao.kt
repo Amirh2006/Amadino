@@ -22,6 +22,13 @@ interface AttendanceDao {
 
     @Query(
         """SELECT * FROM attendance
+           WHERE attendance_date = :attendanceDate
+           ORDER BY student_id ASC"""
+    )
+    fun getByDate(attendanceDate: Long): Flow<List<AttendanceEntity>>
+
+    @Query(
+        """SELECT * FROM attendance
            WHERE student_id = :studentId
              AND class_time_id = :classTimeId
              AND attendance_date = :attendanceDate"""
