@@ -5,6 +5,7 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
+import androidx.sqlite.db.SupportSQLiteDatabase
 import com.amadino.app.data.local.converter.Converters
 import com.amadino.app.data.local.dao.AttendanceDao
 import com.amadino.app.data.local.dao.ClassTimeDao
@@ -60,10 +61,41 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "amadino_database"
                 )
+                    .addCallback(SeedCallback)
                     .fallbackToDestructiveMigration(dropAllTables = true)
                     .build()
                 INSTANCE = instance
                 instance
+            }
+        }
+
+        /**
+         * Inserts the seven week days on first database creation. Saturday to
+         * Wednesday are school days by default; Thursday and Friday are not.
+         * The user can change the flags later in settings.
+         */
+        private val SeedCallback = object : RoomDatabase.Callback() {
+            override fun onCreate(db: SupportSQLiteDatabase) {
+                super.onCreate(db)
+                val days = listOf(
+                    Triple("شنبه", "SAT", 1),
+                    Triple("یکشنبه", "SUN", 1),
+                    Triple("دوشنبه", "MON", 1),
+                    Triple("سه‌شنبه", "TUE", 1),
+                    Triple("چهارشنبه", "WED", 1),
+                    Triple("پنجشنبه", "THU", 0),
+                    Triple("جمعه", "FRI", 0)
+                )
+                days.forEachIndexed { index, (name, code, isSchoolDay) ->
+                    db.execSQL(
+                        "INSERT INTO week_day (id, name, code, is_school_day, sort_order) " +
+                            "VALUES (${index + 1}, '$name', '$code', $isSchoolDay, ${index + 1})"
+                    )
+                }
+                db.execSQL(
+                    "INSERT INTO sms_counter (id, total_sent, total_failed, total_skipped, last_updated) " +
+                        "VALUES (1, 0, 0, 0, ${System.currentTimeMillis()})"
+                )
             }
         }
     }
