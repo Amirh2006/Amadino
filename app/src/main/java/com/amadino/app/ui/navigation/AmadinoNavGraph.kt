@@ -143,6 +143,7 @@ fun AmadinoNavGraph(
                         attendanceRepository = appContainer.attendanceRepository,
                         studentRepository = appContainer.studentRepository,
                         shiftRepository = appContainer.shiftRepository,
+                        sendSmsUseCase = appContainer.sendSmsUseCase,
                         shiftId = shiftId,
                         dayId = dayId,
                         classTimeId = classTimeId

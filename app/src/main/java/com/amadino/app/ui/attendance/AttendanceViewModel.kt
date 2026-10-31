@@ -9,19 +9,26 @@ import com.amadino.app.data.local.entity.StudentEntity
 import com.amadino.app.data.repository.AttendanceRepository
 import com.amadino.app.data.repository.ShiftRepository
 import com.amadino.app.data.repository.StudentRepository
+import com.amadino.app.domain.model.SmsEventType
+import com.amadino.app.domain.usecase.SendSmsUseCase
 import java.time.LocalDate
+import java.time.LocalTime
 import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 class AttendanceViewModel(
     private val attendanceRepository: AttendanceRepository,
-    studentRepository: StudentRepository,
+    private val studentRepository: StudentRepository,
     shiftRepository: ShiftRepository,
+    private val sendSmsUseCase: SendSmsUseCase,
     private val shiftId: Int,
     private val dayId: Int,
     private val classTimeId: Int
@@ -32,13 +39,19 @@ class AttendanceViewModel(
         val status: String?
     )
 
+    data class SmsPrompt(
+        val eventType: SmsEventType,
+        val recipients: Int
+    )
+
     data class UiState(
         val shift: ShiftEntity? = null,
         val classTime: ClassTimeEntity? = null,
         val rows: List<Row> = emptyList(),
         val savedCount: Int = 0,
         val pendingCount: Int = 0,
-        val message: String? = null
+        val message: String? = null,
+        val todayRecords: List<AttendanceEntity> = emptyList()
     )
 
     enum class Status(val value: String) {
@@ -47,13 +60,18 @@ class AttendanceViewModel(
         ABSENT("ABSENT")
     }
 
-    private val today: Long = LocalDate.now()
+    private val todayDate: LocalDate = LocalDate.now()
+    private val today: Long = todayDate
         .atStartOfDay(ZoneId.systemDefault())
         .toInstant()
         .toEpochMilli()
 
     private val edits = MutableStateFlow<Map<Int, String>>(emptyMap())
     private val message = MutableStateFlow<String?>(null)
+    private val _smsPrompt = MutableStateFlow<SmsPrompt?>(null)
+    val smsPrompt: StateFlow<SmsPrompt?> = _smsPrompt.asStateFlow()
+
+    private var lastSavedRecords: List<AttendanceEntity> = emptyList()
 
     val state: StateFlow<UiState> = combine(
         shiftRepository.getShiftById(shiftId),
@@ -71,7 +89,8 @@ class AttendanceViewModel(
             classTime = classTimes.firstOrNull { it.id == classTimeId },
             rows = rows,
             savedCount = existing.size,
-            pendingCount = edited.size
+            pendingCount = edited.size,
+            todayRecords = existing
         )
     }.combine(message) { uiState, currentMessage ->
         uiState.copy(message = currentMessage)
@@ -114,8 +133,58 @@ class AttendanceViewModel(
                     )
                 }
             records.forEach { attendanceRepository.insertAttendance(it) }
+            lastSavedRecords = records
             edits.value = emptyMap()
             message.value = "حضور ${records.size.toPersianCount()} دانش‌آموز ذخیره شد."
+            _smsPrompt.value = SmsPrompt(SmsEventType.ENTRY, records.size)
+        }
+    }
+
+    /** Requests a manual EXIT notification for the records already saved today. */
+    fun requestExitSms() {
+        val records = state.value.todayRecords
+        if (records.isEmpty()) {
+            message.value = "ابتدا حضور را ثبت کنید."
+            return
+        }
+        _smsPrompt.value = SmsPrompt(SmsEventType.EXIT, records.size)
+    }
+
+    fun dismissSmsPrompt() {
+        _smsPrompt.value = null
+    }
+
+    fun sendSms(eventType: SmsEventType) {
+        val records = when (eventType) {
+            SmsEventType.ENTRY -> lastSavedRecords
+            SmsEventType.EXIT -> state.value.todayRecords
+        }
+        _smsPrompt.value = null
+        if (records.isEmpty()) {
+            message.value = "گیرنده‌ای برای ارسال پیامک وجود ندارد."
+            return
+        }
+
+        viewModelScope.launch {
+            val date = todayDate.format(DATE_FORMATTER)
+            val time = LocalTime.now().format(TIME_FORMATTER)
+            var success = 0
+            var failed = 0
+            var skipped = 0
+
+            records.forEach { record ->
+                val student = studentRepository.getStudentById(record.studentId).first()
+                if (student == null) {
+                    skipped++
+                    return@forEach
+                }
+                when (sendSmsUseCase.send(student, eventType, record.id, date, time).status) {
+                    "SUCCESS" -> success++
+                    "FAILED" -> failed++
+                    else -> skipped++
+                }
+            }
+            message.value = "پیامک: ${success.toPersianCount()} موفق، ${failed.toPersianCount()} ناموفق، ${skipped.toPersianCount()} رد شده"
         }
     }
 
@@ -125,4 +194,9 @@ class AttendanceViewModel(
 
     private fun Int.toPersianCount(): String =
         toString().map { if (it in '0'..'9') "۰۱۲۳۴۵۶۷۸۹"[it - '0'] else it }.joinToString("")
+
+    private companion object {
+        val DATE_FORMATTER: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyy/MM/dd")
+        val TIME_FORMATTER: DateTimeFormatter = DateTimeFormatter.ofPattern("HH:mm")
+    }
 }
