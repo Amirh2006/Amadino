@@ -1,57 +1,109 @@
-# Amadino
+# آمادینو (Amadino)
 
-A native Android application for comprehensive student management — tracking attendance per class time, shift management, financial tracking, and SMS notifications to parents.
+Offline-first student management for small institutes: weekly shifts, class-time
+attendance, SMS notifications to parents, tuition/payment tracking and reports.
+Everything is stored locally in Room — no server, no account, no internet
+permission.
 
-## Product Overview
+## Features
 
-Amadino is a simple, reliable, and cost-effective school-administration app that stores data for 50–60 students locally on a smartphone. The school administrator can:
+- **Dashboard** — Persian week strip (school days highlighted), active shifts for
+  the selected day, persistent SMS counter, quick actions.
+- **Students** — searchable list, create/edit form with inline validation
+  (required fields, Iranian mobile format, Toman amounts), soft `isActive` flag.
+- **Attendance** — shift → class time → student rows with Present / Late /
+  Absent, bulk mark-all, upsert per `(student, class time, date)` so re-saving
+  never duplicates rows.
+- **SMS** — ENTRY prompt after saving attendance, manual EXIT action, automatic
+  fallback from mobile 1 to mobile 2, per-message log with status chips and
+  failure reasons, sent/failed/skipped counter.
+- **Finance** — debtor list and payment recording that lowers the student's debt.
+- **Reports** — student counts, today's attendance breakdown, financial totals,
+  SMS totals.
 
-- Manage attendance based on specific class times and daily shifts (categorized by days of the week)
-- Track each student's financial status (total tuition and current debt)
-- Send entry/exit SMS notifications to a primary or secondary registered phone number
-- Display the monitor/supervisor assigned to each shift
-- Track the total number of SMS messages sent
+## Tech stack
 
-## Key Principles
+| Area | Choice |
+|------|--------|
+| Language | Kotlin 2.4.21 |
+| UI | Jetpack Compose (BOM 2026.09.00), Material 3, RTL |
+| Architecture | Single Activity, Navigation-Compose, ViewModel + StateFlow, Repository |
+| Persistence | Room 2.8.5 via KSP (no KAPT) |
+| Async | Coroutines + Flow |
+| SMS | `android.telephony.SmsManager` + runtime `SEND_SMS` |
+| DI | Manual `AppContainer` (no Hilt) |
+| Build | AGP 9.4.1, Gradle 9.6.0, JDK 17, minSdk 26, targetSdk 36 |
 
-- **Zero server cost** — no web hosting, internet accounts, or external SMS panels
-- **Local data storage** — Room (SQLite) on the device
-- **Direct SMS** — official Android `SmsManager` API using the device's SIM card
-- **Simple UI, fast operations, strict data privacy**
-- **Professional Git workflow** — active development on the `develop` branch
+## Architecture
 
-## Core Technologies
+```
+UI (Compose) → ViewModel (StateFlow) → Repository → Room DAO
+                                     ↘ UseCase → SmsSender → SmsManager
+```
 
-| Layer | Technology |
-|-------|------------|
-| Language | Kotlin |
-| UI Framework | Jetpack Compose |
-| Database | Room (SQLite) |
-| Architecture | ViewModel + Repository pattern |
-| SMS Integration | Android `SmsManager` (official API) |
-| Version Control | Git & GitHub |
+```
+com.amadino.app
+├── data/
+│   ├── local/      Room database, entities, DAOs, converters
+│   ├── repository/ Student, Shift, Attendance, Sms, Finance
+│   └── sms/        SmsSender, SmsSentReceiver, SmsResultBus, SmsTemplates
+├── domain/
+│   ├── model/      SmsEventType
+│   ├── usecase/    SendSmsUseCase
+│   └── validation/ StudentValidator
+├── di/             AppContainer, ViewModel factory
+└── ui/             theme, navigation, dashboard, students, attendance,
+                    finance, reports, sms, components
+```
 
-## GitHub & Git Protocol
+Design documents live in [`docs/design/`](docs/design/):
 
-- Remote: `https://github.com/Amirh2006/Amadino.git`
-- All active development, commits, and pushes are made on the `develop` branch first.
-- Do not push directly to `main`/`master` during active development.
-- Commit messages follow [Conventional Commits](https://www.conventionalcommits.org/): `<type>(<scope>): <imperative summary>`
-  - Example: `feat(students): add dual mobile numbers`
-  - Example: `fix(attendance): prevent duplicate class records`
+- [3. UI/UX & architecture](docs/design/3-ui-ux-architecture.md)
+- [7. SMS sending architecture](docs/design/7-sms-sending.md)
 
-## Project Phases
+Requirements are consolidated in
+[`docs/requirements/2.5-consolidated-requirements.md`](docs/requirements/2.5-consolidated-requirements.md).
 
-1. Environment & Repository Initialization
-2. Requirements & Specifications Analysis
-3. UI/UX & Architecture Design
-4. Android Project Foundation
-5. Database & Comprehensive Modeling
-6. Class-Time Attendance Logic
-7. Advanced SMS Management
-8. History, Finance, and Backups
-9 & 10. Testing, Quality Assurance & Final APK
+## Build
 
-## License
+Requirements: JDK 17+ and an Android SDK with platform 37 (`compileSdk 37`).
 
-All rights reserved. Local-first, privacy-focused student management.
+```powershell
+# Debug APK → app/build/outputs/apk/debug/app-debug.apk
+.\gradlew.bat :app:assembleDebug
+
+# Unit tests
+.\gradlew.bat :app:testDebugUnitTest
+
+# Release APK (R8 + resource shrinking) → app/build/outputs/apk/release/
+.\gradlew.bat :app:assembleRelease
+```
+
+### Release signing
+
+Create `keystore.properties` in the project root (git-ignored):
+
+```properties
+storeFile=C:\\path\\to\\release.jks
+storePassword=…
+keyAlias=…
+keyPassword=…
+```
+
+Without that file `assembleRelease` produces an unsigned APK.
+
+## Data & privacy
+
+- All data stays on the device (Room/SQLite).
+- The only privileged capability is `SEND_SMS`, requested at send time.
+- No analytics, no network calls.
+
+## Known limitations
+
+- Shifts and class times are seeded/entered directly in the database; there is
+  no management UI yet.
+- SMS templates are constants (no settings screen) and the SMS log has no retry
+  action.
+- Delivery reports (`deliveredIntent`) are not tracked; only the platform "sent"
+  result is stored.
+- Week-day school flags default to Saturday–Wednesday; editing them is pending.
