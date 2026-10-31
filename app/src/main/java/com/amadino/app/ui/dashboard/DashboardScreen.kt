@@ -1,12 +1,13 @@
 package com.amadino.app.ui.dashboard
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -14,16 +15,26 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.collectAsState
-import androidx.compose.ui.Alignment
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.amadino.app.ui.components.DaySelector
+import com.amadino.app.ui.components.EmptyState
+import com.amadino.app.ui.components.QuickActionBar
+import com.amadino.app.ui.components.ShiftCard
+import com.amadino.app.ui.components.SmsCounterChip
+import com.amadino.app.ui.components.formatDate
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DashboardScreen(
-    viewModel: DashboardViewModel
+    viewModel: DashboardViewModel,
+    onOpenStudents: () -> Unit,
+    onOpenFinance: () -> Unit,
+    onOpenReports: () -> Unit,
+    onOpenSmsLog: () -> Unit,
+    onTakeAttendance: (shiftId: Int) -> Unit
 ) {
     val schoolDays by viewModel.schoolDays.collectAsState()
     val shifts by viewModel.shiftsByDay.collectAsState()
@@ -33,72 +44,73 @@ fun DashboardScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(text = "Amadino") },
+                title = {
+                    Column {
+                        Text(text = "آمادینو", style = MaterialTheme.typography.titleLarge)
+                        Text(
+                            text = formatDate(System.currentTimeMillis()),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                },
+                actions = {
+                    SmsCounterChip(
+                        counter = smsCounter,
+                        modifier = Modifier.padding(end = 12.dp)
+                    )
+                },
                 colors = TopAppBarDefaults.topAppBarColors()
+            )
+        },
+        bottomBar = {
+            QuickActionBar(
+                onStudents = onOpenStudents,
+                onFinance = onOpenFinance,
+                onReports = onOpenReports,
+                onSmsLog = onOpenSmsLog,
+                modifier = Modifier.padding(vertical = 4.dp)
             )
         }
     ) { innerPadding ->
         Column(
             modifier = Modifier
-                .fillMaxWidth()
+                .fillMaxSize()
                 .padding(innerPadding)
-                .padding(16.dp)
         ) {
-            // SMS counter chip
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "SMS: ${smsCounter?.totalSent ?: 0}",
-                    style = MaterialTheme.typography.bodyLarge
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = "${smsCounter?.totalFailed ?: 0} failed · ${smsCounter?.totalSkipped ?: 0} skipped",
-                    style = MaterialTheme.typography.bodySmall
-                )
-            }
+            Spacer(modifier = Modifier.height(8.dp))
 
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Week strip placeholder
-            Text(
-                text = "Week strip (school days: ${schoolDays.size})",
-                style = MaterialTheme.typography.titleMedium
+            DaySelector(
+                days = schoolDays,
+                selectedDayId = selectedDayId,
+                onDaySelected = viewModel::selectDay
             )
 
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Shifts for selected day
-            Text(
-                text = "Shifts for day $selectedDayId",
-                style = MaterialTheme.typography.titleMedium
-            )
+            Spacer(modifier = Modifier.height(12.dp))
 
             if (shifts.isEmpty()) {
-                Text(
-                    text = "No active shifts for this day.",
-                    style = MaterialTheme.typography.bodyMedium
+                EmptyState(
+                    title = "شیفتی برای این روز نیست",
+                    message = "برای این روز شیفتی ثبت نشده است. از بخش مدیریت، شیفت اضافه کنید."
                 )
             } else {
-                Column {
-                    shifts.forEach { shift ->
-                        Text(
-                            text = "${shift.name} (${shift.monitorName})",
-                            style = MaterialTheme.typography.bodyMedium
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = androidx.compose.foundation.layout.PaddingValues(
+                        start = 16.dp,
+                        end = 16.dp,
+                        bottom = 16.dp
+                    ),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    items(items = shifts, key = { it.id }) { shift ->
+                        ShiftCard(
+                            shift = shift,
+                            onTakeAttendance = { onTakeAttendance(shift.id) }
                         )
                     }
                 }
             }
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // Quick actions placeholder
-            Text(
-                text = "Quick actions: Students · Finance · Reports · SMS Log",
-                style = MaterialTheme.typography.bodyMedium
-            )
         }
     }
 }
