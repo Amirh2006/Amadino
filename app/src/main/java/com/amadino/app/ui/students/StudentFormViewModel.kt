@@ -4,18 +4,19 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.amadino.app.data.local.entity.StudentEntity
 import com.amadino.app.data.repository.StudentRepository
+import com.amadino.app.domain.validation.StudentValidator
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
+typealias Field = StudentValidator.Field
+
 class StudentFormViewModel(
     private val studentRepository: StudentRepository,
     private val studentId: Int?
 ) : ViewModel() {
-
-    enum class Field { FULL_NAME, FATHER_NAME, NATIONAL_ID, GRADE, MOBILE1, MOBILE2, TUITION, CURRENT_DEBT }
 
     data class UiState(
         val isNew: Boolean = false,
@@ -86,16 +87,20 @@ class StudentFormViewModel(
 
         viewModelScope.launch {
             val now = System.currentTimeMillis()
-            val tuition = current.totalTuition.toAmount()
-            val debt = current.currentDebt.toAmount().takeIf { !current.isNew } ?: tuition
+            val tuition = StudentValidator.amount(current.totalTuition)
+            val debt = if (current.isNew) {
+                tuition
+            } else {
+                StudentValidator.amount(current.currentDebt)
+            }
             val entity = StudentEntity(
                 id = existing?.id ?: 0,
                 fullName = current.fullName.trim(),
                 fatherName = current.fatherName.trim(),
                 nationalId = current.nationalId.trim().ifBlank { null },
                 grade = current.grade.trim(),
-                mobile1 = current.mobile1.normalizeDigits(),
-                mobile2 = current.mobile2.trim().normalizeDigits().ifBlank { null },
+                mobile1 = StudentValidator.normalizeDigits(current.mobile1),
+                mobile2 = StudentValidator.normalizeDigits(current.mobile2.trim()).ifBlank { null },
                 totalTuition = tuition,
                 currentDebt = debt,
                 isActive = current.isActive,
@@ -112,50 +117,16 @@ class StudentFormViewModel(
         }
     }
 
-    private fun validate(state: UiState): Map<Field, String> {
-        val errors = mutableMapOf<Field, String>()
-        if (state.fullName.isBlank()) errors[Field.FULL_NAME] = "نام الزامی است."
-        if (state.fatherName.isBlank()) errors[Field.FATHER_NAME] = "نام پدر الزامی است."
-        if (state.grade.isBlank()) errors[Field.GRADE] = "پایه الزامی است."
-
-        val mobile1 = state.mobile1.normalizeDigits()
-        if (mobile1.isBlank()) {
-            errors[Field.MOBILE1] = "شماره موبایل اول الزامی است."
-        } else if (!MOBILE_PATTERN.matches(mobile1)) {
-            errors[Field.MOBILE1] = "شماره موبایل معتبر نیست (مثال: 09123456789)."
-        }
-
-        val mobile2 = state.mobile2.normalizeDigits()
-        if (mobile2.isNotBlank() && !MOBILE_PATTERN.matches(mobile2)) {
-            errors[Field.MOBILE2] = "شماره موبایل دوم معتبر نیست."
-        }
-
-        val tuition = state.totalTuition.toAmount()
-        if (tuition < 0) errors[Field.TUITION] = "شهریه نمی‌تواند منفی باشد."
-
-        val debt = state.currentDebt.toAmount()
-        if (!state.isNew && debt > tuition) {
-            errors[Field.TUITION] = "بدهی نمی‌تواند از شهریه بیشتر باشد."
-        }
-
-        return errors
-    }
-
-    private fun String.normalizeDigits(): String = buildString(length) {
-        for (char in this@normalizeDigits) {
-            append(
-                when (char) {
-                    in '۰'..'۹' -> '0' + (char - '۰')
-                    in '٠'..'٩' -> '0' + (char - '٠')
-                    else -> char
-                }
-            )
-        }
-    }.replace(",", "").replace("٬", "").trim()
-
-    private fun String.toAmount(): Long = normalizeDigits().toLongOrNull() ?: 0L
-
-    private companion object {
-        val MOBILE_PATTERN = Regex("^09\\d{9}$")
-    }
+    private fun validate(state: UiState): Map<Field, String> = StudentValidator.validate(
+        StudentValidator.Input(
+            isNew = state.isNew,
+            fullName = state.fullName,
+            fatherName = state.fatherName,
+            grade = state.grade,
+            mobile1 = state.mobile1,
+            mobile2 = state.mobile2,
+            totalTuition = state.totalTuition,
+            currentDebt = state.currentDebt
+        )
+    )
 }

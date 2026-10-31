@@ -28,7 +28,6 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.unit.dp
-import com.amadino.app.ui.students.StudentFormViewModel.Field
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
