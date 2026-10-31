@@ -47,3 +47,4 @@ proguard/
 .env
 *.env
 secrets.properties
+keystore.properties
