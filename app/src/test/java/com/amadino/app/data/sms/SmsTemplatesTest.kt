@@ -1,5 +1,6 @@
 package com.amadino.app.data.sms
 
+import com.amadino.app.domain.model.SmsEventType
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -37,5 +38,36 @@ class SmsTemplatesTest {
         )
 
         assertEquals("سارا {unknown}", rendered)
+    }
+
+    @Test
+    fun `stored template overrides the default`() {
+        assertEquals(
+            "{student} سلام",
+            SmsTemplates.resolveTemplate(SmsEventType.ENTRY, "{student} سلام")
+        )
+    }
+
+    @Test
+    fun `blank or missing template falls back to the default`() {
+        assertEquals(
+            SmsTemplates.DEFAULT_ENTRY,
+            SmsTemplates.resolveTemplate(SmsEventType.ENTRY, "   ")
+        )
+        assertEquals(
+            SmsTemplates.DEFAULT_EXIT,
+            SmsTemplates.resolveTemplate(SmsEventType.EXIT, null)
+        )
+    }
+
+    @Test
+    fun `each event type has its own default`() {
+        assertEquals(SmsTemplates.DEFAULT_ENTRY, SmsTemplates.defaultTemplate(SmsEventType.ENTRY))
+        assertEquals(SmsTemplates.DEFAULT_EXIT, SmsTemplates.defaultTemplate(SmsEventType.EXIT))
+    }
+
+    @Test
+    fun `documented placeholders match the supported tokens`() {
+        assertEquals(listOf("{student}", "{date}", "{time}"), SmsTemplates.PLACEHOLDERS)
     }
 }
