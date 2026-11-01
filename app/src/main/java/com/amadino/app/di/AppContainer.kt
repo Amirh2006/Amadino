@@ -1,6 +1,7 @@
 package com.amadino.app.di
 
 import android.content.Context
+import com.amadino.app.data.backup.BackupManager
 import com.amadino.app.data.local.dao.AttendanceDao
 import com.amadino.app.data.local.dao.ClassTimeDao
 import com.amadino.app.data.local.dao.PaymentDao
@@ -43,6 +44,7 @@ class AppContainer private constructor(
 
     val smsSender = SmsSender(context.applicationContext)
     val sendSmsUseCase = SendSmsUseCase(smsRepository, smsTemplateRepository, smsSender)
+    val backupManager = BackupManager(database, context.contentResolver)
 
     companion object {
         @Volatile

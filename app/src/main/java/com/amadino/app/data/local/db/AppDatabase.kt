@@ -9,6 +9,7 @@ import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 import com.amadino.app.data.local.converter.Converters
 import com.amadino.app.data.local.dao.AttendanceDao
+import com.amadino.app.data.local.dao.BackupDao
 import com.amadino.app.data.local.dao.ClassTimeDao
 import com.amadino.app.data.local.dao.PaymentDao
 import com.amadino.app.data.local.dao.ShiftDao
@@ -54,6 +55,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun smsCounterDao(): SmsCounterDao
     abstract fun smsTemplateDao(): SmsTemplateDao
     abstract fun paymentDao(): PaymentDao
+    abstract fun backupDao(): BackupDao
 
     companion object {
         @Volatile
