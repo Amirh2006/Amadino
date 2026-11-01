@@ -16,12 +16,15 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -41,12 +44,23 @@ import com.amadino.app.ui.components.formatDateTime
 @Composable
 fun SmsLogScreen(
     viewModel: SmsLogViewModel,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    onOpenTemplates: () -> Unit
 ) {
     val rows by viewModel.rows.collectAsState()
     val counter by viewModel.counter.collectAsState()
     val filter by viewModel.filter.collectAsState()
+    val retryingIds by viewModel.retryingIds.collectAsState()
+    val message by viewModel.message.collectAsState()
     var selectedLog by remember { mutableStateOf<SmsLogEntity?>(null) }
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    LaunchedEffect(message) {
+        message?.let {
+            snackbarHostState.showSnackbar(it)
+            viewModel.consumeMessage()
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -55,9 +69,13 @@ fun SmsLogScreen(
                 navigationIcon = {
                     TextButton(onClick = onBack) { Text(text = "بازگشت") }
                 },
+                actions = {
+                    TextButton(onClick = onOpenTemplates) { Text(text = "قالب‌ها") }
+                },
                 colors = TopAppBarDefaults.topAppBarColors()
             )
-        }
+        },
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
     ) { innerPadding ->
         Column(
             modifier = Modifier
@@ -135,6 +153,25 @@ fun SmsLogScreen(
                                     style = MaterialTheme.typography.labelSmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
+                                if (row.log.status != "SUCCESS") {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.End
+                                    ) {
+                                        TextButton(
+                                            onClick = { viewModel.retry(row.log) },
+                                            enabled = row.log.id !in retryingIds
+                                        ) {
+                                            Text(
+                                                text = if (row.log.id in retryingIds) {
+                                                    "در حال ارسال…"
+                                                } else {
+                                                    "ارسال مجدد"
+                                                }
+                                            )
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
@@ -166,6 +203,14 @@ fun SmsLogScreen(
                             text = "از شماره دوم استفاده شده است.",
                             style = MaterialTheme.typography.bodySmall
                         )
+                    }
+                    if (log.status != "SUCCESS") {
+                        TextButton(
+                            onClick = {
+                                viewModel.retry(log)
+                                selectedLog = null
+                            }
+                        ) { Text(text = "ارسال مجدد") }
                     }
                 }
             },

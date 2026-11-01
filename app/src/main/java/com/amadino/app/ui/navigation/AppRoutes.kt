@@ -17,6 +17,7 @@ object AppRoutes {
     const val SMS_LOG = "sms_log"
 
     const val WEEK_DAY_SETTINGS = "settings/weekdays"
+    const val SMS_TEMPLATE_SETTINGS = "settings/sms_templates"
     const val SHIFT_LIST = "shifts/{dayId}"
     const val SHIFT_FORM = "shift_form?shiftId={shiftId}&dayId={dayId}"
     const val CLASS_TIME_LIST = "class_times/{shiftId}"

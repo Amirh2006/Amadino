@@ -18,7 +18,8 @@ permission.
   never duplicates rows.
 - **SMS** — ENTRY prompt after saving attendance, manual EXIT action, automatic
   fallback from mobile 1 to mobile 2, per-message log with status chips and
-  failure reasons, sent/failed/skipped counter.
+  failure reasons, retry for failed/skipped messages, editable templates with
+  live preview, sent/failed/skipped counter.
 - **Finance** — debtor list and payment recording that lowers the student's debt.
 - **Reports** — student counts, today's attendance breakdown, financial totals,
   SMS totals.
@@ -47,15 +48,15 @@ UI (Compose) → ViewModel (StateFlow) → Repository → Room DAO
 com.amadino.app
 ├── data/
 │   ├── local/      Room database, entities, DAOs, converters
-│   ├── repository/ Student, Shift, Attendance, Sms, Finance
+│   ├── repository/ Student, Shift, Attendance, Sms, SmsTemplate, Finance
 │   └── sms/        SmsSender, SmsSentReceiver, SmsResultBus, SmsTemplates
 ├── domain/
 │   ├── model/      SmsEventType
 │   ├── usecase/    SendSmsUseCase
-│   └── validation/ StudentValidator
+│   └── validation/ StudentValidator, ScheduleValidator
 ├── di/             AppContainer, ViewModel factory
 └── ui/             theme, navigation, dashboard, students, attendance,
-                    finance, reports, sms, components
+                    finance, reports, sms, settings, components
 ```
 
 Design documents live in [`docs/design/`](docs/design/):
@@ -63,6 +64,7 @@ Design documents live in [`docs/design/`](docs/design/):
 - [3. UI/UX & architecture](docs/design/3-ui-ux-architecture.md)
 - [7. SMS sending architecture](docs/design/7-sms-sending.md)
 - [9. Schedule management](docs/design/9-schedule-management.md)
+- [10. SMS templates & retry](docs/design/10-sms-settings-and-retry.md)
 
 Requirements are consolidated in
 [`docs/requirements/2.5-consolidated-requirements.md`](docs/requirements/2.5-consolidated-requirements.md).
@@ -103,8 +105,8 @@ Without that file `assembleRelease` produces an unsigned APK.
 
 ## Known limitations
 
-- SMS templates are constants (no settings screen) and the SMS log has no retry
-  action.
 - Delivery reports (`deliveredIntent`) are not tracked; only the platform "sent"
   result is stored.
 - Class-time ordering uses a numeric `sortOrder` field instead of drag-and-drop.
+- Retrying a message re-sends it with the original timestamp; it does not ask
+  for the SMS permission again.
