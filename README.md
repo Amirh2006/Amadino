@@ -24,6 +24,8 @@ permission.
 - **Finance** — debtor list and payment recording that lowers the student's debt.
 - **Reports** — student counts, today's attendance breakdown, financial totals,
   SMS totals.
+- **Backup** — export every table to a JSON file via the system file picker and
+  restore it later; no cloud, no storage permission, ids preserved.
 
 ## Tech stack
 
@@ -50,6 +52,7 @@ com.amadino.app
 ├── data/
 │   ├── local/      Room database, entities, DAOs, converters
 │   ├── repository/ Student, Shift, Attendance, Sms, SmsTemplate, Finance
+│   ├── backup/     BackupManager (JSON export/import)
 │   └── sms/        SmsSender, SmsSentReceiver, SmsResultBus, SmsTemplates
 ├── domain/
 │   ├── model/      SmsEventType
@@ -67,6 +70,7 @@ Design documents live in [`docs/design/`](docs/design/):
 - [9. Schedule management](docs/design/9-schedule-management.md)
 - [10. SMS templates & retry](docs/design/10-sms-settings-and-retry.md)
 - [11. Delivery reports & permission-aware retry](docs/design/11-delivery-reports.md)
+- [12. Backup & restore](docs/design/12-backup-and-restore.md)
 
 Requirements are consolidated in
 [`docs/requirements/2.5-consolidated-requirements.md`](docs/requirements/2.5-consolidated-requirements.md).
