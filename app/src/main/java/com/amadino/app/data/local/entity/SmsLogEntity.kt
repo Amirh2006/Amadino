@@ -58,5 +58,9 @@ data class SmsLogEntity(
     val sentAt: Long = System.currentTimeMillis(),
 
     @ColumnInfo(name = "fallback_used")
-    val fallbackUsed: Boolean = false
+    val fallbackUsed: Boolean = false,
+
+    /** Delivery report state, see [com.amadino.app.data.sms.SmsDeliveryStatus]. */
+    @ColumnInfo(name = "delivery_status")
+    val deliveryStatus: String? = null
 )

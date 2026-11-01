@@ -17,12 +17,15 @@ permission.
   Absent, bulk mark-all, upsert per `(student, class time, date)` so re-saving
   never duplicates rows.
 - **SMS** — ENTRY prompt after saving attendance, manual EXIT action, automatic
-  fallback from mobile 1 to mobile 2, per-message log with status chips and
-  failure reasons, retry for failed/skipped messages, editable templates with
-  live preview, sent/failed/skipped counter.
+  fallback from mobile 1 to mobile 2, per-message log with status chips,
+  failure reasons and delivery reports, retry for failed/skipped messages
+  (with a permission prompt), editable templates with live preview,
+  sent/failed/skipped counter.
 - **Finance** — debtor list and payment recording that lowers the student's debt.
 - **Reports** — student counts, today's attendance breakdown, financial totals,
   SMS totals.
+- **Backup** — export every table to a JSON file via the system file picker and
+  restore it later; no cloud, no storage permission, ids preserved.
 
 ## Tech stack
 
@@ -49,6 +52,7 @@ com.amadino.app
 ├── data/
 │   ├── local/      Room database, entities, DAOs, converters
 │   ├── repository/ Student, Shift, Attendance, Sms, SmsTemplate, Finance
+│   ├── backup/     BackupManager (JSON export/import)
 │   └── sms/        SmsSender, SmsSentReceiver, SmsResultBus, SmsTemplates
 ├── domain/
 │   ├── model/      SmsEventType
@@ -65,6 +69,8 @@ Design documents live in [`docs/design/`](docs/design/):
 - [7. SMS sending architecture](docs/design/7-sms-sending.md)
 - [9. Schedule management](docs/design/9-schedule-management.md)
 - [10. SMS templates & retry](docs/design/10-sms-settings-and-retry.md)
+- [11. Delivery reports & permission-aware retry](docs/design/11-delivery-reports.md)
+- [12. Backup & restore](docs/design/12-backup-and-restore.md)
 
 Requirements are consolidated in
 [`docs/requirements/2.5-consolidated-requirements.md`](docs/requirements/2.5-consolidated-requirements.md).
@@ -105,8 +111,7 @@ Without that file `assembleRelease` produces an unsigned APK.
 
 ## Known limitations
 
-- Delivery reports (`deliveredIntent`) are not tracked; only the platform "sent"
-  result is stored.
+- Delivery reports are best-effort; carriers that never send them leave the
+  message in `PENDING`.
 - Class-time ordering uses a numeric `sortOrder` field instead of drag-and-drop.
-- Retrying a message re-sends it with the original timestamp; it does not ask
-  for the SMS permission again.
+- Retrying a message re-sends it with the original timestamp.

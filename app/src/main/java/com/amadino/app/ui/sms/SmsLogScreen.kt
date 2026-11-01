@@ -1,5 +1,8 @@
 package com.amadino.app.ui.sms
 
+import android.Manifest
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -32,9 +35,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.amadino.app.data.local.entity.SmsLogEntity
+import com.amadino.app.data.sms.SmsDeliveryStatus
+import com.amadino.app.data.sms.hasSmsPermission
 import com.amadino.app.ui.components.EmptyState
 import com.amadino.app.ui.components.SmsCounterChip
 import com.amadino.app.ui.components.SmsStatusChip
@@ -54,6 +60,29 @@ fun SmsLogScreen(
     val message by viewModel.message.collectAsState()
     var selectedLog by remember { mutableStateOf<SmsLogEntity?>(null) }
     val snackbarHostState = remember { SnackbarHostState() }
+    val context = LocalContext.current
+    var pendingRetry by remember { mutableStateOf<SmsLogEntity?>(null) }
+
+    val permissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        val log = pendingRetry
+        pendingRetry = null
+        if (granted && log != null) {
+            viewModel.retry(log)
+        } else if (!granted) {
+            viewModel.reportMessage("برای ارسال پیامک، اجازه ارسال پیامک لازم است.")
+        }
+    }
+
+    val requestRetry: (SmsLogEntity) -> Unit = { log ->
+        if (context.hasSmsPermission()) {
+            viewModel.retry(log)
+        } else {
+            pendingRetry = log
+            permissionLauncher.launch(Manifest.permission.SEND_SMS)
+        }
+    }
 
     LaunchedEffect(message) {
         message?.let {
@@ -153,13 +182,23 @@ fun SmsLogScreen(
                                     style = MaterialTheme.typography.labelSmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
+                                row.log.deliveryStatus?.let { delivery ->
+                                    Text(
+                                        text = deliveryLabel(delivery),
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = when (delivery) {
+                                            SmsDeliveryStatus.FAILED -> MaterialTheme.colorScheme.error
+                                            else -> MaterialTheme.colorScheme.onSurfaceVariant
+                                        }
+                                    )
+                                }
                                 if (row.log.status != "SUCCESS") {
                                     Row(
                                         modifier = Modifier.fillMaxWidth(),
                                         horizontalArrangement = Arrangement.End
                                     ) {
                                         TextButton(
-                                            onClick = { viewModel.retry(row.log) },
+                                            onClick = { requestRetry(row.log) },
                                             enabled = row.log.id !in retryingIds
                                         ) {
                                             Text(
@@ -204,10 +243,16 @@ fun SmsLogScreen(
                             style = MaterialTheme.typography.bodySmall
                         )
                     }
+                    log.deliveryStatus?.let { delivery ->
+                        Text(
+                            text = "وضعیت تحویل: ${deliveryLabel(delivery)}",
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                    }
                     if (log.status != "SUCCESS") {
                         TextButton(
                             onClick = {
-                                viewModel.retry(log)
+                                requestRetry(log)
                                 selectedLog = null
                             }
                         ) { Text(text = "ارسال مجدد") }
@@ -240,4 +285,11 @@ private fun FilterOption(
             style = MaterialTheme.typography.labelMedium
         )
     }
+}
+
+private fun deliveryLabel(status: String): String = when (status) {
+    SmsDeliveryStatus.DELIVERED -> "تحویل شد"
+    SmsDeliveryStatus.FAILED -> "تحویل نشد"
+    SmsDeliveryStatus.PENDING -> "در انتظار تحویل"
+    else -> status
 }

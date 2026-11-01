@@ -32,7 +32,8 @@ import com.amadino.app.data.local.entity.WeekDayEntity
 fun WeekDaySettingsScreen(
     viewModel: WeekDaySettingsViewModel,
     onBack: () -> Unit,
-    onOpenDay: (dayId: Int) -> Unit
+    onOpenDay: (dayId: Int) -> Unit,
+    onOpenBackup: () -> Unit
 ) {
     val days by viewModel.days.collectAsState()
 
@@ -42,6 +43,9 @@ fun WeekDaySettingsScreen(
                 title = { Text(text = "روزها و شیفت‌ها") },
                 navigationIcon = {
                     TextButton(onClick = onBack) { Text(text = "بازگشت") }
+                },
+                actions = {
+                    TextButton(onClick = onOpenBackup) { Text(text = "پشتیبان‌گیری") }
                 },
                 colors = TopAppBarDefaults.topAppBarColors()
             )

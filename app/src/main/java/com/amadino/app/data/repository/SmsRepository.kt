@@ -25,6 +25,17 @@ class SmsRepository private constructor(
     suspend fun insertSmsLogs(vararg logs: SmsLogEntity): List<Long> =
         smsLogDao.insertAll(*logs)
 
+    suspend fun updateResult(
+        id: Int,
+        status: String,
+        errorReason: String?,
+        destination: String,
+        fallbackUsed: Boolean
+    ) = smsLogDao.updateResult(id, status, errorReason, destination, fallbackUsed)
+
+    suspend fun updateDeliveryStatus(id: Int, status: String) =
+        smsLogDao.updateDeliveryStatus(id, status)
+
     suspend fun incrementCounter(sent: Long, failed: Long, skipped: Long, lastUpdated: Long) =
         smsCounterDao.increment(sent, failed, skipped, lastUpdated)
 

@@ -22,6 +22,8 @@ import com.amadino.app.ui.finance.PaymentsScreen
 import com.amadino.app.ui.finance.PaymentsViewModel
 import com.amadino.app.ui.reports.ReportsScreen
 import com.amadino.app.ui.reports.ReportsViewModel
+import com.amadino.app.ui.settings.BackupScreen
+import com.amadino.app.ui.settings.BackupViewModel
 import com.amadino.app.ui.settings.ClassTimeFormScreen
 import com.amadino.app.ui.settings.ClassTimeFormViewModel
 import com.amadino.app.ui.settings.ClassTimeListScreen
@@ -83,7 +85,8 @@ fun AmadinoNavGraph(
             WeekDaySettingsScreen(
                 viewModel = viewModel,
                 onBack = { navController.popBackStack() },
-                onOpenDay = { dayId -> navController.navigate(AppRoutes.shifts(dayId)) }
+                onOpenDay = { dayId -> navController.navigate(AppRoutes.shifts(dayId)) },
+                onOpenBackup = { navController.navigate(AppRoutes.BACKUP) }
             )
         }
 
@@ -367,6 +370,18 @@ fun AmadinoNavGraph(
                 }
             )
             SmsTemplateSettingsScreen(
+                viewModel = viewModel,
+                onBack = { navController.popBackStack() }
+            )
+        }
+
+        composable(AppRoutes.BACKUP) {
+            val viewModel: BackupViewModel = viewModel(
+                factory = containerViewModelFactory(container) { appContainer ->
+                    BackupViewModel(appContainer.backupManager)
+                }
+            )
+            BackupScreen(
                 viewModel = viewModel,
                 onBack = { navController.popBackStack() }
             )

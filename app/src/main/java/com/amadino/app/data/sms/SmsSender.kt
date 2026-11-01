@@ -39,7 +39,7 @@ class SmsSender(private val context: Context) {
             SmsManager.getDefault()
         }
 
-    suspend fun send(destination: String, body: String): SmsSendResult {
+    suspend fun send(destination: String, body: String, logId: Int? = null): SmsSendResult {
         if (!context.hasSmsPermission()) return SmsSendResult.Failure("SEND_SMS permission not granted")
         if (destination.isBlank()) return SmsSendResult.Failure("missing destination")
         if (body.isBlank()) return SmsSendResult.Failure("empty message")
@@ -48,7 +48,7 @@ class SmsSender(private val context: Context) {
             .getOrElse { return SmsSendResult.Failure(it.message ?: "cannot divide message") }
 
         return runCatching {
-            dispatch(destination, parts)
+            dispatch(destination, parts, logId)
         }.getOrElse { throwable ->
             SmsSendResult.Failure(
                 when (throwable) {
@@ -60,7 +60,11 @@ class SmsSender(private val context: Context) {
         }
     }
 
-    private suspend fun dispatch(destination: String, parts: List<String>): SmsSendResult =
+    private suspend fun dispatch(
+        destination: String,
+        parts: List<String>,
+        logId: Int?
+    ): SmsSendResult =
         coroutineScope {
             val requestId = UUID.randomUUID().toString()
             val result = async(start = CoroutineStart.UNDISPATCHED) {
@@ -78,19 +82,41 @@ class SmsSender(private val context: Context) {
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
             )
 
+            val deliveredIntent = logId?.let { id ->
+                PendingIntent.getBroadcast(
+                    context,
+                    requestId.hashCode(),
+                    Intent(context, SmsDeliveredReceiver::class.java)
+                        .setAction(SmsDeliveredReceiver.ACTION)
+                        .putExtra(SmsDeliveredReceiver.EXTRA_LOG_ID, id),
+                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                )
+            }
+
             if (parts.size > 1) {
                 val sentIntents = ArrayList<PendingIntent>(parts.size).apply {
                     repeat(parts.size) { add(pendingIntent) }
+                }
+                val deliveredIntents = deliveredIntent?.let { intent ->
+                    ArrayList<PendingIntent>(parts.size).apply {
+                        repeat(parts.size) { add(intent) }
+                    }
                 }
                 smsManager.sendMultipartTextMessage(
                     destination,
                     null,
                     ArrayList(parts),
                     sentIntents,
-                    null
+                    deliveredIntents
                 )
             } else {
-                smsManager.sendTextMessage(destination, null, parts.first(), pendingIntent, null)
+                smsManager.sendTextMessage(
+                    destination,
+                    null,
+                    parts.first(),
+                    pendingIntent,
+                    deliveredIntent
+                )
             }
 
             val event = result.await()

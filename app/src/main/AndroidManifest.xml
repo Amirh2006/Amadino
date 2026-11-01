@@ -30,6 +30,14 @@
                 <action android:name="com.amadino.app.action.SMS_SENT" />
             </intent-filter>
         </receiver>
+
+        <receiver
+            android:name=".data.sms.SmsDeliveredReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.amadino.app.action.SMS_DELIVERED" />
+            </intent-filter>
+        </receiver>
     </application>
 
 </manifest>
