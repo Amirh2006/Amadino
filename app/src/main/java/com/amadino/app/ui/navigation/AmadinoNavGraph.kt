@@ -30,6 +30,8 @@ import com.amadino.app.ui.settings.ShiftFormScreen
 import com.amadino.app.ui.settings.ShiftFormViewModel
 import com.amadino.app.ui.settings.ShiftListScreen
 import com.amadino.app.ui.settings.ShiftListViewModel
+import com.amadino.app.ui.settings.SmsTemplateSettingsScreen
+import com.amadino.app.ui.settings.SmsTemplateSettingsViewModel
 import com.amadino.app.ui.settings.WeekDaySettingsScreen
 import com.amadino.app.ui.settings.WeekDaySettingsViewModel
 import com.amadino.app.ui.sms.SmsLogScreen
@@ -351,6 +353,18 @@ fun AmadinoNavGraph(
                 }
             )
             SmsLogScreen(
+                viewModel = viewModel,
+                onBack = { navController.popBackStack() }
+            )
+        }
+
+        composable(AppRoutes.SMS_TEMPLATE_SETTINGS) {
+            val viewModel: SmsTemplateSettingsViewModel = viewModel(
+                factory = containerViewModelFactory(container) { appContainer ->
+                    SmsTemplateSettingsViewModel(appContainer.smsTemplateRepository)
+                }
+            )
+            SmsTemplateSettingsScreen(
                 viewModel = viewModel,
                 onBack = { navController.popBackStack() }
             )
