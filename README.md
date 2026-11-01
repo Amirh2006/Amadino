@@ -9,6 +9,8 @@ permission.
 
 - **Dashboard** — Persian week strip (school days highlighted), active shifts for
   the selected day, persistent SMS counter, quick actions.
+- **Schedule management** — toggle school days, CRUD shifts per day and the
+  class-time bell schedule per shift (validated time ranges).
 - **Students** — searchable list, create/edit form with inline validation
   (required fields, Iranian mobile format, Toman amounts), soft `isActive` flag.
 - **Attendance** — shift → class time → student rows with Present / Late /
@@ -60,6 +62,7 @@ Design documents live in [`docs/design/`](docs/design/):
 
 - [3. UI/UX & architecture](docs/design/3-ui-ux-architecture.md)
 - [7. SMS sending architecture](docs/design/7-sms-sending.md)
+- [9. Schedule management](docs/design/9-schedule-management.md)
 
 Requirements are consolidated in
 [`docs/requirements/2.5-consolidated-requirements.md`](docs/requirements/2.5-consolidated-requirements.md).
@@ -100,10 +103,8 @@ Without that file `assembleRelease` produces an unsigned APK.
 
 ## Known limitations
 
-- Shifts and class times are seeded/entered directly in the database; there is
-  no management UI yet.
 - SMS templates are constants (no settings screen) and the SMS log has no retry
   action.
 - Delivery reports (`deliveredIntent`) are not tracked; only the platform "sent"
   result is stored.
-- Week-day school flags default to Saturday–Wednesday; editing them is pending.
+- Class-time ordering uses a numeric `sortOrder` field instead of drag-and-drop.
