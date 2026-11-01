@@ -3,6 +3,7 @@ package com.amadino.app.domain.usecase
 import com.amadino.app.data.local.entity.SmsLogEntity
 import com.amadino.app.data.local.entity.StudentEntity
 import com.amadino.app.data.repository.SmsRepository
+import com.amadino.app.data.repository.SmsTemplateRepository
 import com.amadino.app.data.sms.SmsSendResult
 import com.amadino.app.data.sms.SmsSender
 import com.amadino.app.data.sms.SmsTemplates
@@ -15,6 +16,7 @@ import com.amadino.app.domain.model.SmsEventType
  */
 class SendSmsUseCase(
     private val smsRepository: SmsRepository,
+    private val smsTemplateRepository: SmsTemplateRepository,
     private val smsSender: SmsSender
 ) {
 
@@ -25,10 +27,10 @@ class SendSmsUseCase(
         date: String,
         time: String
     ): SmsLogEntity {
-        val template = when (eventType) {
-            SmsEventType.ENTRY -> SmsTemplates.DEFAULT_ENTRY
-            SmsEventType.EXIT -> SmsTemplates.DEFAULT_EXIT
-        }
+        val template = SmsTemplates.resolveTemplate(
+            eventType = eventType,
+            stored = smsTemplateRepository.getTemplate(eventType)
+        )
         val body = SmsTemplates.render(
             template = template,
             studentName = student.fullName,

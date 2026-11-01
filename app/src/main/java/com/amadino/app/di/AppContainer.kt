@@ -7,6 +7,7 @@ import com.amadino.app.data.local.dao.PaymentDao
 import com.amadino.app.data.local.dao.ShiftDao
 import com.amadino.app.data.local.dao.SmsCounterDao
 import com.amadino.app.data.local.dao.SmsLogDao
+import com.amadino.app.data.local.dao.SmsTemplateDao
 import com.amadino.app.data.local.dao.StudentDao
 import com.amadino.app.data.local.dao.WeekDayDao
 import com.amadino.app.data.local.db.AppDatabase
@@ -14,6 +15,7 @@ import com.amadino.app.data.repository.AttendanceRepository
 import com.amadino.app.data.repository.FinanceRepository
 import com.amadino.app.data.repository.ShiftRepository
 import com.amadino.app.data.repository.SmsRepository
+import com.amadino.app.data.repository.SmsTemplateRepository
 import com.amadino.app.data.repository.StudentRepository
 import com.amadino.app.data.sms.SmsSender
 import com.amadino.app.domain.usecase.SendSmsUseCase
@@ -29,16 +31,18 @@ class AppContainer private constructor(
     val attendanceDao: AttendanceDao = database.attendanceDao()
     val smsLogDao: SmsLogDao = database.smsLogDao()
     val smsCounterDao: SmsCounterDao = database.smsCounterDao()
+    val smsTemplateDao: SmsTemplateDao = database.smsTemplateDao()
     val paymentDao: PaymentDao = database.paymentDao()
 
     val studentRepository = StudentRepository.getInstance(studentDao, weekDayDao)
     val shiftRepository = ShiftRepository.getInstance(weekDayDao, shiftDao, classTimeDao)
     val attendanceRepository = AttendanceRepository.getInstance(attendanceDao)
     val smsRepository = SmsRepository.getInstance(smsLogDao, smsCounterDao)
+    val smsTemplateRepository = SmsTemplateRepository.getInstance(smsTemplateDao)
     val financeRepository = FinanceRepository.getInstance(studentDao, paymentDao)
 
     val smsSender = SmsSender(context.applicationContext)
-    val sendSmsUseCase = SendSmsUseCase(smsRepository, smsSender)
+    val sendSmsUseCase = SendSmsUseCase(smsRepository, smsTemplateRepository, smsSender)
 
     companion object {
         @Volatile
