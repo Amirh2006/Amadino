@@ -12,6 +12,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -34,6 +35,7 @@ fun DashboardScreen(
     onOpenFinance: () -> Unit,
     onOpenReports: () -> Unit,
     onOpenSmsLog: () -> Unit,
+    onOpenSettings: () -> Unit,
     onTakeAttendance: (shiftId: Int) -> Unit
 ) {
     val schoolDays by viewModel.schoolDays.collectAsState()
@@ -55,6 +57,9 @@ fun DashboardScreen(
                     }
                 },
                 actions = {
+                    TextButton(onClick = onOpenSettings) {
+                        Text(text = "مدیریت")
+                    }
                     SmsCounterChip(
                         counter = smsCounter,
                         modifier = Modifier.padding(end = 12.dp)

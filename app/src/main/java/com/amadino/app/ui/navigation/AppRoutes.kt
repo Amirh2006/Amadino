@@ -16,6 +16,12 @@ object AppRoutes {
     const val REPORTS = "reports"
     const val SMS_LOG = "sms_log"
 
+    const val WEEK_DAY_SETTINGS = "settings/weekdays"
+    const val SHIFT_LIST = "shifts/{dayId}"
+    const val SHIFT_FORM = "shift_form?shiftId={shiftId}&dayId={dayId}"
+    const val CLASS_TIME_LIST = "class_times/{shiftId}"
+    const val CLASS_TIME_FORM = "class_time_form?classTimeId={classTimeId}&shiftId={shiftId}"
+
     const val ARG_STUDENT_ID = "studentId"
     const val ARG_SHIFT_ID = "shiftId"
     const val ARG_DAY_ID = "dayId"
@@ -30,4 +36,18 @@ object AppRoutes {
         "attendance/$shiftId/$dayId/$classTimeId"
 
     fun payments(studentId: Int): String = "payments/$studentId"
+
+    fun shifts(dayId: Int): String = "shifts/$dayId"
+
+    fun shiftForm(dayId: Int, shiftId: Int? = null): String =
+        if (shiftId == null) "shift_form?dayId=$dayId" else "shift_form?shiftId=$shiftId&dayId=$dayId"
+
+    fun classTimes(shiftId: Int): String = "class_times/$shiftId"
+
+    fun classTimeForm(shiftId: Int, classTimeId: Int? = null): String =
+        if (classTimeId == null) {
+            "class_time_form?shiftId=$shiftId"
+        } else {
+            "class_time_form?classTimeId=$classTimeId&shiftId=$shiftId"
+        }
 }
