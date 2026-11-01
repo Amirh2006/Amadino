@@ -348,13 +348,15 @@ fun AmadinoNavGraph(
                 factory = containerViewModelFactory(container) { appContainer ->
                     SmsLogViewModel(
                         smsRepository = appContainer.smsRepository,
-                        studentRepository = appContainer.studentRepository
+                        studentRepository = appContainer.studentRepository,
+                        sendSmsUseCase = appContainer.sendSmsUseCase
                     )
                 }
             )
             SmsLogScreen(
                 viewModel = viewModel,
-                onBack = { navController.popBackStack() }
+                onBack = { navController.popBackStack() },
+                onOpenTemplates = { navController.navigate(AppRoutes.SMS_TEMPLATE_SETTINGS) }
             )
         }
 
