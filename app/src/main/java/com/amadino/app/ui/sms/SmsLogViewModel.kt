@@ -104,6 +104,11 @@ class SmsLogViewModel(
         _message.value = null
     }
 
+    /** Shows a transient message in the log screen snackbar. */
+    fun reportMessage(text: String) {
+        _message.value = text
+    }
+
     private companion object {
         const val STATUS_SUCCESS = "SUCCESS"
         val DATE_FORMATTER = SimpleDateFormat("yyyy/MM/dd", Locale.US)
