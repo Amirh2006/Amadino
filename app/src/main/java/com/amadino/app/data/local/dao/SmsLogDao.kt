@@ -46,6 +46,25 @@ interface SmsLogDao {
     @Update
     suspend fun update(log: SmsLogEntity)
 
+    @Query(
+        """UPDATE sms_log
+           SET status = :status,
+               error_reason = :errorReason,
+               destination = :destination,
+               fallback_used = :fallbackUsed
+           WHERE id = :id"""
+    )
+    suspend fun updateResult(
+        id: Int,
+        status: String,
+        errorReason: String?,
+        destination: String,
+        fallbackUsed: Boolean
+    )
+
+    @Query("UPDATE sms_log SET delivery_status = :status WHERE id = :id")
+    suspend fun updateDeliveryStatus(id: Int, status: String)
+
     @Delete
     suspend fun delete(log: SmsLogEntity)
 }

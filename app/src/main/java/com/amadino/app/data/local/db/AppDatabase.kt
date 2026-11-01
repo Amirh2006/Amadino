@@ -39,7 +39,7 @@ import com.amadino.app.data.local.entity.WeekDayEntity
         PaymentEntity::class,
         SmsTemplateEntity::class
     ],
-    version = 2,
+    version = 3,
     autoMigrations = []
 )
 @TypeConverters(Converters::class)
@@ -67,7 +67,7 @@ abstract class AppDatabase : RoomDatabase() {
                     "amadino_database"
                 )
                     .addCallback(SeedCallback)
-                    .addMigrations(MIGRATION_1_2)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
                     .fallbackToDestructiveMigration(dropAllTables = true)
                     .build()
                 INSTANCE = instance
@@ -88,6 +88,16 @@ abstract class AppDatabase : RoomDatabase() {
                         "`updated_at` INTEGER NOT NULL, " +
                         "PRIMARY KEY(`event_type`))"
                 )
+            }
+        }
+
+        /**
+         * Adds the delivery-report column. Existing rows keep `NULL`, meaning
+         * "no report available" for messages sent before this version.
+         */
+        private val MIGRATION_2_3 = object : Migration(2, 3) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE `sms_log` ADD COLUMN `delivery_status` TEXT")
             }
         }
 
