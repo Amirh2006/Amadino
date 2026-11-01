@@ -5,6 +5,7 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
+import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 import com.amadino.app.data.local.converter.Converters
 import com.amadino.app.data.local.dao.AttendanceDao
@@ -13,6 +14,7 @@ import com.amadino.app.data.local.dao.PaymentDao
 import com.amadino.app.data.local.dao.ShiftDao
 import com.amadino.app.data.local.dao.SmsCounterDao
 import com.amadino.app.data.local.dao.SmsLogDao
+import com.amadino.app.data.local.dao.SmsTemplateDao
 import com.amadino.app.data.local.dao.StudentDao
 import com.amadino.app.data.local.dao.WeekDayDao
 import com.amadino.app.data.local.entity.AttendanceEntity
@@ -20,6 +22,7 @@ import com.amadino.app.data.local.entity.ClassTimeEntity
 import com.amadino.app.data.local.entity.PaymentEntity
 import com.amadino.app.data.local.entity.SmsCounterEntity
 import com.amadino.app.data.local.entity.SmsLogEntity
+import com.amadino.app.data.local.entity.SmsTemplateEntity
 import com.amadino.app.data.local.entity.ShiftEntity
 import com.amadino.app.data.local.entity.StudentEntity
 import com.amadino.app.data.local.entity.WeekDayEntity
@@ -33,9 +36,10 @@ import com.amadino.app.data.local.entity.WeekDayEntity
         AttendanceEntity::class,
         SmsLogEntity::class,
         SmsCounterEntity::class,
-        PaymentEntity::class
+        PaymentEntity::class,
+        SmsTemplateEntity::class
     ],
-    version = 1,
+    version = 2,
     autoMigrations = []
 )
 @TypeConverters(Converters::class)
@@ -48,6 +52,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun attendanceDao(): AttendanceDao
     abstract fun smsLogDao(): SmsLogDao
     abstract fun smsCounterDao(): SmsCounterDao
+    abstract fun smsTemplateDao(): SmsTemplateDao
     abstract fun paymentDao(): PaymentDao
 
     companion object {
@@ -62,10 +67,27 @@ abstract class AppDatabase : RoomDatabase() {
                     "amadino_database"
                 )
                     .addCallback(SeedCallback)
+                    .addMigrations(MIGRATION_1_2)
                     .fallbackToDestructiveMigration(dropAllTables = true)
                     .build()
                 INSTANCE = instance
                 instance
+            }
+        }
+
+        /**
+         * Adds the user-editable SMS template table. Existing rows are kept; the
+         * templates simply fall back to the built-in defaults until edited.
+         */
+        private val MIGRATION_1_2 = object : Migration(1, 2) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS `sms_template` (" +
+                        "`event_type` TEXT NOT NULL, " +
+                        "`body` TEXT NOT NULL, " +
+                        "`updated_at` INTEGER NOT NULL, " +
+                        "PRIMARY KEY(`event_type`))"
+                )
             }
         }
 
