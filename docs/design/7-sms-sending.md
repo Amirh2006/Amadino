@@ -62,11 +62,11 @@ EXIT:  {student} عزیز، خروج شما در {date} ساعت {time} ثبت �
 ```
 
 Short by design so most messages fit in one 70-character part and avoid
-multipart billing. Templates are constants for now; user editing is a
-follow-up.
+multipart billing. Templates became user-editable in Phase 10
+(see [10](10-sms-settings-and-retry.md)); defaults live in `SmsTemplates`.
 
 ## Known limitations
 
-- No retry button in the SMS log yet (design §3.4 mentions it).
 - No scheduled/automatic exit detection: EXIT is manual by design.
-- Delivery reports (`deliveredIntent`) are not tracked, only sent results.
+- Delivery reports are best-effort: carriers may not send them, in which case a
+  sent message stays `PENDING` (see [11](11-delivery-reports.md)).
