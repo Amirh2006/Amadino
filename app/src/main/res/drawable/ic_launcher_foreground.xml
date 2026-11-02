@@ -4,7 +4,20 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <path
-        android:fillColor="#FFFFFF"
-        android:pathData="M54,54 m-24,0 a24,24 0 1,0 48,0 a24,24 0 1,0 -48,0" />
+    <!-- Background circle in secondary cyan -->
+    <group>
+        <path
+            android:fillColor="#00E5FF"
+            android:pathData="M54,18 a36,36 0 1,1 0,72 a36,36 0 1,1 0,-72" />
+    </group>
+    <!-- Foreground shape in tertiary green -->
+    <group>
+        <path
+            android:fillColor="#39E079"
+            android:pathData="M54,54 m-22,0 a22,22 0 1,1 44,0 a22,22 0 1,1 -44,0" />
+        <!-- Accent cutout -->
+        <path
+            android:fillColor="#070D19"
+            android:pathData="M54,42 l12,12 l-12,12 z" />
+    </group>
 </vector>

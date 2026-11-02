@@ -1,3 +1,11 @@
 <resources>
-    <color name="ic_launcher_background">#2E7D32</color>
+    <color name="ic_launcher_background">#070D19</color>
+    <color name="brand_primary_dark">#0B1426</color>
+    <color name="brand_secondary_cyan">#00E5FF</color>
+    <color name="brand_tertiary_green">#39E079</color>
+    <color name="brand_dark_bg">#070D19</color>
+    <color name="brand_card_bg">#131E32</color>
+    <color name="brand_light_bg">#F4F6F9</color>
+    <color name="brand_surface_white">#FFFFFF</color>
+    <color name="brand_typography_gray">#94A3BB</color>
 </resources>

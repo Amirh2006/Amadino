@@ -11,21 +11,47 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
 
 private val DarkColorScheme = darkColorScheme(
-    primary = Purple80,
-    secondary = PurpleGrey80,
-    tertiary = Pink80
+    primary = SecondaryCyan,
+    onPrimary = PrimaryDark,
+    primaryContainer = CardBg,
+    onPrimaryContainer = SurfaceWhite,
+    secondary = TertiaryGreen,
+    onSecondary = PrimaryDark,
+    secondaryContainer = CardBg,
+    onSecondaryContainer = SurfaceWhite,
+    tertiary = TypographyGray,
+    onTertiary = PrimaryDark,
+    background = DarkBg,
+    onBackground = SurfaceWhite,
+    surface = DarkBg,
+    onSurface = SurfaceWhite,
+    surfaceVariant = CardBg,
+    onSurfaceVariant = TypographyGray,
 )
 
 private val LightColorScheme = lightColorScheme(
-    primary = Purple40,
-    secondary = PurpleGrey40,
-    tertiary = Pink40
+    primary = SecondaryCyan,
+    onPrimary = PrimaryDark,
+    primaryContainer = LightBg,
+    onPrimaryContainer = PrimaryDark,
+    secondary = TertiaryGreen,
+    onSecondary = PrimaryDark,
+    secondaryContainer = LightBg,
+    onSecondaryContainer = PrimaryDark,
+    tertiary = TypographyGray,
+    onTertiary = PrimaryDark,
+    background = LightBg,
+    onBackground = PrimaryDark,
+    surface = SurfaceWhite,
+    onSurface = PrimaryDark,
+    surfaceVariant = CardBg,
+    onSurfaceVariant = TypographyGray,
 )
 
 @Composable
 fun AmadinoTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
-    dynamicColor: Boolean = true,
+    dynamicColor: Boolean = false,
     content: @Composable () -> Unit
 ) {
     val colorScheme = when {
