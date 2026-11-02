@@ -12,7 +12,8 @@ permission.
 - **Schedule management** — toggle school days, CRUD shifts per day and the
   class-time bell schedule per shift (validated time ranges).
 - **Students** — searchable list, create/edit form with inline validation
-  (required fields, Iranian mobile format, Toman amounts), soft `isActive` flag.
+  (required fields, Iranian mobile format, Toman amounts), success feedback
+  on save, soft `isActive` flag.
 - **Attendance** — shift → class time → student rows with Present / Late /
   Absent, bulk mark-all, upsert per `(student, class time, date)` so re-saving
   never duplicates rows.
@@ -26,6 +27,22 @@ permission.
   SMS totals.
 - **Backup** — export every table to a JSON file via the system file picker and
   restore it later; no cloud, no storage permission, ids preserved.
+
+## Design (v1.1.0)
+
+| Role | Hex | Usage |
+|------|-----|-------|
+| Primary / Dark surface | `#0B1426` | App bar, dark backgrounds, text on accent |
+| Secondary / glassmorphism | `#00E5FF` | Primary action buttons, accents |
+| Tertiary / success | `#39E079` | Secondary actions, success states |
+| Dark BG | `#070D19` | Main background |
+| Cards | `#131E32` | Cards, panels, containers |
+| Light BG | `#F4F6F9` | Light theme background |
+| Surface text | `#FFFFFF` | Primary text on dark |
+| Typography | `#94A3BB` | Secondary text, hints |
+
+The app icon uses the secondary cyan (`#00E5FF`) and tertiary green (`#39E079`)
+on a dark background (`#070D19`).
 
 ## Tech stack
 
@@ -71,6 +88,7 @@ Design documents live in [`docs/design/`](docs/design/):
 - [10. SMS templates & retry](docs/design/10-sms-settings-and-retry.md)
 - [11. Delivery reports & permission-aware retry](docs/design/11-delivery-reports.md)
 - [12. Backup & restore](docs/design/12-backup-and-restore.md)
+- [13. Visual design v1.1.0](docs/design/13-visual-design-v110.md)
 
 Requirements are consolidated in
 [`docs/requirements/2.5-consolidated-requirements.md`](docs/requirements/2.5-consolidated-requirements.md).
