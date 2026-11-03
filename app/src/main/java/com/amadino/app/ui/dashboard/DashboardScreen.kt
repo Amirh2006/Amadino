@@ -74,7 +74,7 @@ fun DashboardScreen(
                 onFinance = onOpenFinance,
                 onReports = onOpenReports,
                 onSmsLog = onOpenSmsLog,
-                modifier = Modifier.padding(vertical = 4.dp)
+                modifier = Modifier.padding(start = 16.dp, top = 4.dp, end = 16.dp, bottom = 16.dp)
             )
         }
     ) { innerPadding ->
