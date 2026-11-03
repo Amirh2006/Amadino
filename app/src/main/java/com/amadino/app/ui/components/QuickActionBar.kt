@@ -1,5 +1,6 @@
 package com.amadino.app.ui.components
 
+import android.R.attr.bottom
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -24,7 +25,8 @@ fun QuickActionBar(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 8.dp),
+            .padding(horizontal = 8.dp)
+            .padding(bottom = 32.dp),
         horizontalArrangement = Arrangement.SpaceEvenly,
         verticalAlignment = Alignment.CenterVertically
     ) {
