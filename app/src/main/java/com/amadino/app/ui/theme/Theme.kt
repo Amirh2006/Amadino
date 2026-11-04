@@ -1,71 +1,26 @@
-package com.amadino.app.ui.theme
-
-import android.os.Build
-import androidx.compose.foundation.isSystemInDarkTheme
+package com.amadino.app.ui.theme 
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.dynamicDarkColorScheme
-import androidx.compose.material3.dynamicLightColorScheme
-import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.graphics.Color
 
-private val DarkColorScheme = darkColorScheme(
-    primary = SecondaryCyan,
-    onPrimary = PrimaryDark,
-    primaryContainer = CardBg,
-    onPrimaryContainer = SurfaceWhite,
-    secondary = TertiaryGreen,
-    onSecondary = PrimaryDark,
-    secondaryContainer = CardBg,
-    onSecondaryContainer = SurfaceWhite,
-    tertiary = TypographyGray,
-    onTertiary = PrimaryDark,
-    background = DarkBg,
-    onBackground = SurfaceWhite,
-    surface = DarkBg,
-    onSurface = SurfaceWhite,
-    surfaceVariant = CardBg,
-    onSurfaceVariant = TypographyGray,
-)
-
-private val LightColorScheme = lightColorScheme(
-    primary = SecondaryCyan,
-    onPrimary = PrimaryDark,
-    primaryContainer = LightBg,
-    onPrimaryContainer = PrimaryDark,
-    secondary = TertiaryGreen,
-    onSecondary = PrimaryDark,
-    secondaryContainer = LightBg,
-    onSecondaryContainer = PrimaryDark,
-    tertiary = TypographyGray,
-    onTertiary = PrimaryDark,
-    background = LightBg,
-    onBackground = PrimaryDark,
-    surface = SurfaceWhite,
-    onSurface = PrimaryDark,
-    surfaceVariant = CardBg,
-    onSurfaceVariant = TypographyGray,
+// Enforce dark theme with the Cyber-Violet palette
+private val CyberVioletColorScheme = darkColorScheme(
+    primary = CyberPurple,
+    secondary = ElectricAqua,
+    tertiary = FieryCoral,
+    background = DeepVelvetDark,
+    surface = DeepVelvetDark,
+    onPrimary = Color.White,
+    onSecondary = DeepVelvetDark,
+    onBackground = SoftLilac,
+    onSurface = SoftLilac
 )
 
 @Composable
-fun AmadinoTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
-    dynamicColor: Boolean = false,
-    content: @Composable () -> Unit
-) {
-    val colorScheme = when {
-        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
-            val context = LocalContext.current
-            if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
-        }
-        darkTheme -> DarkColorScheme
-        else -> LightColorScheme
-    }
-
+fun AmadinoTheme(content: @Composable () -> Unit) {
     MaterialTheme(
-        colorScheme = colorScheme,
-        typography = Typography,
+        colorScheme = CyberVioletColorScheme,
         content = content
     )
 }
