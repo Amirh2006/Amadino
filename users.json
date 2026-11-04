@@ -1,0 +1,53 @@
+{
+  "version": "1.2.0",
+  "updated_at": "2026-11-04T00:00:00",
+  "students": [
+    {
+      "id": 1,
+      "full_name": "علی رضایی",
+      "father_name": "محمد رضایی",
+      "mobile": "09123456789",
+      "parent_mobile": "09121112233",
+      "grade": "دهم",
+      "is_active": true,
+      "status": "absent",
+      "last_checkin": null,
+      "last_checkout": null,
+      "sms_sent": false,
+      "sms_delivered": false
+    },
+    {
+      "id": 2,
+      "full_name": "سارا کریمی",
+      "father_name": "احمد کریمی",
+      "mobile": "09129876543",
+      "parent_mobile": "09123334455",
+      "grade": "دهم",
+      "is_active": true,
+      "status": "absent",
+      "last_checkin": null,
+      "last_checkout": null,
+      "sms_sent": false,
+      "sms_delivered": false
+    },
+    {
+      "id": 3,
+      "full_name": "رضا میرزایی",
+      "father_name": "حسن میرزایی",
+      "mobile": "09351234567",
+      "parent_mobile": "09357778899",
+      "grade": "یازدهم",
+      "is_active": true,
+      "status": "absent",
+      "last_checkin": null,
+      "last_checkout": null,
+      "sms_sent": false,
+      "sms_delivered": false
+    }
+  ],
+  "settings": {
+    "sms_enabled": true,
+    "auto_notify_parent": true,
+    "theme": "cyber_violet"
+  }
+}
