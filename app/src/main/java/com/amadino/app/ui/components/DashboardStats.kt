@@ -1,12 +1,11 @@
 package com.amadino.app.ui.components
+
 import androidx.compose.foundation.layout.*
-import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -14,10 +13,6 @@ import com.amadino.app.ui.theme.ElectricAqua
 import com.amadino.app.ui.theme.FieryCoral
 import com.amadino.app.ui.theme.SoftLilac
 
-/**
- * Data class to hold the dashboard statistics.
- * In the next phases, this will be populated from the users.json / Database.
- */
 data class DashboardStats(
     val presentCount: Int = 0,
     val absentCount: Int = 0,
@@ -36,7 +31,7 @@ fun DashboardStatsRow(stats: DashboardStats, modifier: Modifier = Modifier) {
         StatCard(
             title = "حاضرین",
             value = stats.presentCount.toString(),
-            icon = androidx.compose.material.icons.Icons.Default.CheckCircle,
+            iconSymbol = "✔",
             accentColor = ElectricAqua,
             modifier = Modifier.weight(1f)
         )
@@ -45,7 +40,7 @@ fun DashboardStatsRow(stats: DashboardStats, modifier: Modifier = Modifier) {
         StatCard(
             title = "غایبین",
             value = stats.absentCount.toString(),
-            icon = androidx.compose.material.icons.Icons.Default.Cancel,
+            iconSymbol = "✖",
             accentColor = FieryCoral,
             modifier = Modifier.weight(1f)
         )
@@ -54,7 +49,7 @@ fun DashboardStatsRow(stats: DashboardStats, modifier: Modifier = Modifier) {
         StatCard(
             title = "پیامک‌ها",
             value = stats.smsCount.toString(),
-            icon = androidx.compose.material.icons.Icons.Default.Email,
+            iconSymbol = "✉",
             accentColor = SoftLilac,
             modifier = Modifier.weight(1f)
         )
@@ -65,25 +60,25 @@ fun DashboardStatsRow(stats: DashboardStats, modifier: Modifier = Modifier) {
 fun StatCard(
     title: String,
     value: String,
-    icon: ImageVector,
+    iconSymbol: String,
     accentColor: Color,
     modifier: Modifier = Modifier
 ) {
-    // Using the GlassCard component created in the previous phase
     GlassCard(
         modifier = modifier,
-        borderColor = accentColor.copy(alpha = 0.4f) // Subtle glowing border matching the accent
+        borderColor = accentColor.copy(alpha = 0.4f)
     ) {
         Column(
             modifier = Modifier.fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = title,
-                tint = accentColor,
-                modifier = Modifier.size(28.dp)
+            // Using Unicode symbols instead of Material Icons to avoid dependency issues
+            Text(
+                text = iconSymbol,
+                color = accentColor,
+                fontSize = 24.sp,
+                fontWeight = FontWeight.Bold
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
