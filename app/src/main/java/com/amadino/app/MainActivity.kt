@@ -11,7 +11,9 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -24,7 +26,6 @@ import androidx.compose.ui.unit.sp
 import com.amadino.app.ui.MainViewModel
 import com.amadino.app.ui.components.*
 import com.amadino.app.ui.theme.*
-import kotlinx.coroutines.delay
 
 class MainActivity : ComponentActivity() {
     private val viewModel: MainViewModel by viewModels()
@@ -60,7 +61,6 @@ fun MainScreen(viewModel: MainViewModel) {
         ) {
             BrandHeader()
 
-            // Secondary Buttons (Settings & History)
             Row(
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
                 horizontalArrangement = Arrangement.SpaceBetween
@@ -73,7 +73,6 @@ fun MainScreen(viewModel: MainViewModel) {
             DashboardStatsRow(stats = uiState.stats)
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Student List
             Text("لیست دانش‌آموزان", color = SoftLilac, fontSize = 16.sp, modifier = Modifier.padding(horizontal = 16.dp))
             LazyColumn(
                 modifier = Modifier.weight(1f).padding(horizontal = 16.dp),
@@ -95,7 +94,6 @@ fun MainScreen(viewModel: MainViewModel) {
                 }
             }
 
-            // Action Panel (Only enabled if a student is selected)
             val isEnabled = uiState.selectedStudentId != null
             Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -134,26 +132,95 @@ fun MainScreen(viewModel: MainViewModel) {
     if (showAddDialog) {
         AddStudentDialog(
             onDismiss = { showAddDialog = false },
-            onAdd = { name, phone -> viewModel.addStudent(name, phone); showAddDialog = false }
+            onAdd = { name, phone, className, school, field ->
+                viewModel.addStudent(name, phone, className, school, field)
+                showAddDialog = false
+            }
         )
     }
 }
 
 @Composable
-fun AddStudentDialog(onDismiss: () -> Unit, onAdd: (String, String) -> Unit) {
+fun AddStudentDialog(onDismiss: () -> Unit, onAdd: (String, String, String, String, String) -> Unit) {
     var name by remember { mutableStateOf("") }
     var phone by remember { mutableStateOf("") }
+    var className by remember { mutableStateOf("") }
+    var school by remember { mutableStateOf("") }
+    var field by remember { mutableStateOf("") }
+
     AlertDialog(
-        onDismissRequest = onDismiss, containerColor = DeepVelvetDark,
-        title = { Text("افزودن دانش‌آموز", color = Color.White) },
+        onDismissRequest = onDismiss,
+        containerColor = DeepVelvetDark,
+        title = { Text("افزودن دانش‌آموز جدید", color = Color.White) },
         text = {
-            Column {
-                OutlinedTextField(value = name, onValueChange = { name = it }, label = { Text("نام", color = SoftLilac) })
-                Spacer(modifier = Modifier.height(8.dp))
-                OutlinedTextField(value = phone, onValueChange = { phone = it }, label = { Text("موبایل والدین", color = SoftLilac) })
+            Column(
+                modifier = Modifier.verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                OutlinedTextField(
+                    value = name, onValueChange = { name = it },
+                    label = { Text("نام و نام خانوادگی", color = SoftLilac) },
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedTextColor = Color.White,
+                        unfocusedTextColor = Color.White,
+                        focusedBorderColor = CyberPurple,
+                        unfocusedBorderColor = SoftLilac.copy(alpha = 0.5f)
+                    ),
+                    modifier = Modifier.fillMaxWidth()
+                )
+                OutlinedTextField(
+                    value = phone, onValueChange = { phone = it },
+                    label = { Text("شماره موبایل والدین", color = SoftLilac) },
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedTextColor = Color.White,
+                        unfocusedTextColor = Color.White,
+                        focusedBorderColor = CyberPurple,
+                        unfocusedBorderColor = SoftLilac.copy(alpha = 0.5f)
+                    ),
+                    modifier = Modifier.fillMaxWidth()
+                )
+                OutlinedTextField(
+                    value = className, onValueChange = { className = it },
+                    label = { Text("کلاس (مثلاً دهم)", color = SoftLilac) },
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedTextColor = Color.White,
+                        unfocusedTextColor = Color.White,
+                        focusedBorderColor = CyberPurple,
+                        unfocusedBorderColor = SoftLilac.copy(alpha = 0.5f)
+                    ),
+                    modifier = Modifier.fillMaxWidth()
+                )
+                OutlinedTextField(
+                    value = school, onValueChange = { school = it },
+                    label = { Text("دبیرستان", color = SoftLilac) },
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedTextColor = Color.White,
+                        unfocusedTextColor = Color.White,
+                        focusedBorderColor = CyberPurple,
+                        unfocusedBorderColor = SoftLilac.copy(alpha = 0.5f)
+                    ),
+                    modifier = Modifier.fillMaxWidth()
+                )
+                OutlinedTextField(
+                    value = field, onValueChange = { field = it },
+                    label = { Text("رشته تحصیلی", color = SoftLilac) },
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedTextColor = Color.White,
+                        unfocusedTextColor = Color.White,
+                        focusedBorderColor = CyberPurple,
+                        unfocusedBorderColor = SoftLilac.copy(alpha = 0.5f)
+                    ),
+                    modifier = Modifier.fillMaxWidth()
+                )
             }
         },
-        confirmButton = { TextButton(onClick = { if (name.isNotBlank() && phone.isNotBlank()) onAdd(name, phone) }) { Text("ثبت", color = CyberPurple) } },
+        confirmButton = {
+            TextButton(onClick = {
+                if (name.isNotBlank() && phone.isNotBlank()) {
+                    onAdd(name, phone, className, school, field)
+                }
+            }) { Text("ثبت", color = CyberPurple) }
+        },
         dismissButton = { TextButton(onClick = onDismiss) { Text("انصراف", color = SoftLilac) } }
     )
 }
