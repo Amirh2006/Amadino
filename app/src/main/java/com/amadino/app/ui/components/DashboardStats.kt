@@ -12,6 +12,7 @@ import androidx.compose.ui.unit.sp
 import com.amadino.app.ui.theme.ElectricAqua
 import com.amadino.app.ui.theme.FieryCoral
 import com.amadino.app.ui.theme.SoftLilac
+import com.amadino.app.utils.toPersianDigits // Import the utility
 
 data class DashboardStats(
     val presentCount: Int = 0,
@@ -27,28 +28,25 @@ fun DashboardStatsRow(stats: DashboardStats, modifier: Modifier = Modifier) {
             .padding(horizontal = 16.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        // Present Card
         StatCard(
             title = "حاضرین",
-            value = stats.presentCount.toString(),
+            value = toPersianDigits(stats.presentCount.toString()), // Convert to Persian
             iconSymbol = "✔",
             accentColor = ElectricAqua,
             modifier = Modifier.weight(1f)
         )
 
-        // Absent Card
         StatCard(
             title = "غایبین",
-            value = stats.absentCount.toString(),
+            value = toPersianDigits(stats.absentCount.toString()), // Convert to Persian
             iconSymbol = "✖",
             accentColor = FieryCoral,
             modifier = Modifier.weight(1f)
         )
 
-        // SMS Card
         StatCard(
             title = "پیامک‌ها",
-            value = stats.smsCount.toString(),
+            value = toPersianDigits(stats.smsCount.toString()), // Convert to Persian
             iconSymbol = "✉",
             accentColor = SoftLilac,
             modifier = Modifier.weight(1f)
@@ -73,7 +71,6 @@ fun StatCard(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            // Using Unicode symbols instead of Material Icons to avoid dependency issues
             Text(
                 text = iconSymbol,
                 color = accentColor,

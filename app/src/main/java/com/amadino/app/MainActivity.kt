@@ -46,7 +46,9 @@ class MainActivity : ComponentActivity() {
 fun MainScreen(viewModel: MainViewModel) {
     val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsState()
+
     var showAddDialog by remember { mutableStateOf(false) }
+    var showSettingsDialog by remember { mutableStateOf(false) }
 
     Scaffold(
         floatingActionButton = {
@@ -66,7 +68,7 @@ fun MainScreen(viewModel: MainViewModel) {
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 GlassButton("تاریخچه و غیرفعال‌ها", onClick = { Toast.makeText(context, "بخش تاریخچه", Toast.LENGTH_SHORT).show() })
-                GlassButton("تنظیمات", onClick = { Toast.makeText(context, "بخش تنظیمات", Toast.LENGTH_SHORT).show() })
+                GlassButton("تنظیمات", onClick = { showSettingsDialog = true })
             }
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -96,6 +98,7 @@ fun MainScreen(viewModel: MainViewModel) {
 
             val isEnabled = uiState.selectedStudentId != null
             Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                // Action Buttons (Check-In / Check-Out)
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     GradientButton(
                         text = "ثبت ورود", iconText = "✔",
@@ -110,15 +113,29 @@ fun MainScreen(viewModel: MainViewModel) {
                         onClick = { if (isEnabled) viewModel.performAction("CHECK_OUT") else Toast.makeText(context, "ابتدا یک دانش‌آموز را انتخاب کنید", Toast.LENGTH_SHORT).show() }
                     )
                 }
-                GradientButton(
-                    text = "ارسال پیامک به والدین", iconText = "✉",
-                    gradientColors = listOf(CyberPurple, Color(0xFFE91E63)),
-                    modifier = Modifier.fillMaxWidth(),
-                    onClick = {
-                        if (isEnabled) viewModel.sendSmsToSelected { msg -> Toast.makeText(context, msg, Toast.LENGTH_SHORT).show() }
-                        else Toast.makeText(context, "ابتدا یک دانش‌آموز را انتخاب کنید", Toast.LENGTH_SHORT).show()
-                    }
-                )
+
+                // SMS Buttons (SMS In / SMS Out)
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    GradientButton(
+                        text = "پیامک ورود", iconText = "✉",
+                        gradientColors = listOf(CyberPurple, Color(0xFF9D4EDD)),
+                        modifier = Modifier.weight(1f),
+                        onClick = {
+                            if (isEnabled) viewModel.sendSmsToSelected("IN") { msg -> Toast.makeText(context, msg, Toast.LENGTH_SHORT).show() }
+                            else Toast.makeText(context, "ابتدا یک دانش‌آموز را انتخاب کنید", Toast.LENGTH_SHORT).show()
+                        }
+                    )
+                    GradientButton(
+                        text = "پیامک خروج", iconText = "✉",
+                        gradientColors = listOf(Color(0xFFE91E63), Color(0xFFC2185B)),
+                        modifier = Modifier.weight(1f),
+                        onClick = {
+                            if (isEnabled) viewModel.sendSmsToSelected("OUT") { msg -> Toast.makeText(context, msg, Toast.LENGTH_SHORT).show() }
+                            else Toast.makeText(context, "ابتدا یک دانش‌آموز را انتخاب کنید", Toast.LENGTH_SHORT).show()
+                        }
+                    )
+                }
+
                 GradientButton(
                     text = "تایید و ثبت نهایی", iconText = "📋",
                     gradientColors = listOf(CyberPurple, Color(0xFF7B2CBF)),
@@ -135,6 +152,21 @@ fun MainScreen(viewModel: MainViewModel) {
             onAdd = { name, phone, className, school, field ->
                 viewModel.addStudent(name, phone, className, school, field)
                 showAddDialog = false
+            }
+        )
+    }
+
+    if (showSettingsDialog) {
+        SettingsDialog(
+            currentTemplateIn = uiState.smsTemplateIn,
+            currentTemplateOut = uiState.smsTemplateOut,
+            onDismiss = { showSettingsDialog = false },
+            onSaveTemplates = { inT, outT -> viewModel.saveSmsTemplates(inT, outT); showSettingsDialog = false },
+            onClearData = {
+                viewModel.clearAllData {
+                    Toast.makeText(context, "تمام داده‌ها پاک شدند", Toast.LENGTH_SHORT).show()
+                }
+                showSettingsDialog = false
             }
         )
     }
@@ -161,10 +193,8 @@ fun AddStudentDialog(onDismiss: () -> Unit, onAdd: (String, String, String, Stri
                     value = name, onValueChange = { name = it },
                     label = { Text("نام و نام خانوادگی", color = SoftLilac) },
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedTextColor = Color.White,
-                        unfocusedTextColor = Color.White,
-                        focusedBorderColor = CyberPurple,
-                        unfocusedBorderColor = SoftLilac.copy(alpha = 0.5f)
+                        focusedTextColor = Color.White, unfocusedTextColor = Color.White,
+                        focusedBorderColor = CyberPurple, unfocusedBorderColor = SoftLilac.copy(alpha = 0.5f)
                     ),
                     modifier = Modifier.fillMaxWidth()
                 )
@@ -172,10 +202,8 @@ fun AddStudentDialog(onDismiss: () -> Unit, onAdd: (String, String, String, Stri
                     value = phone, onValueChange = { phone = it },
                     label = { Text("شماره موبایل والدین", color = SoftLilac) },
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedTextColor = Color.White,
-                        unfocusedTextColor = Color.White,
-                        focusedBorderColor = CyberPurple,
-                        unfocusedBorderColor = SoftLilac.copy(alpha = 0.5f)
+                        focusedTextColor = Color.White, unfocusedTextColor = Color.White,
+                        focusedBorderColor = CyberPurple, unfocusedBorderColor = SoftLilac.copy(alpha = 0.5f)
                     ),
                     modifier = Modifier.fillMaxWidth()
                 )
@@ -183,10 +211,8 @@ fun AddStudentDialog(onDismiss: () -> Unit, onAdd: (String, String, String, Stri
                     value = className, onValueChange = { className = it },
                     label = { Text("کلاس (مثلاً دهم)", color = SoftLilac) },
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedTextColor = Color.White,
-                        unfocusedTextColor = Color.White,
-                        focusedBorderColor = CyberPurple,
-                        unfocusedBorderColor = SoftLilac.copy(alpha = 0.5f)
+                        focusedTextColor = Color.White, unfocusedTextColor = Color.White,
+                        focusedBorderColor = CyberPurple, unfocusedBorderColor = SoftLilac.copy(alpha = 0.5f)
                     ),
                     modifier = Modifier.fillMaxWidth()
                 )
@@ -194,10 +220,8 @@ fun AddStudentDialog(onDismiss: () -> Unit, onAdd: (String, String, String, Stri
                     value = school, onValueChange = { school = it },
                     label = { Text("دبیرستان", color = SoftLilac) },
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedTextColor = Color.White,
-                        unfocusedTextColor = Color.White,
-                        focusedBorderColor = CyberPurple,
-                        unfocusedBorderColor = SoftLilac.copy(alpha = 0.5f)
+                        focusedTextColor = Color.White, unfocusedTextColor = Color.White,
+                        focusedBorderColor = CyberPurple, unfocusedBorderColor = SoftLilac.copy(alpha = 0.5f)
                     ),
                     modifier = Modifier.fillMaxWidth()
                 )
@@ -205,10 +229,8 @@ fun AddStudentDialog(onDismiss: () -> Unit, onAdd: (String, String, String, Stri
                     value = field, onValueChange = { field = it },
                     label = { Text("رشته تحصیلی", color = SoftLilac) },
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedTextColor = Color.White,
-                        unfocusedTextColor = Color.White,
-                        focusedBorderColor = CyberPurple,
-                        unfocusedBorderColor = SoftLilac.copy(alpha = 0.5f)
+                        focusedTextColor = Color.White, unfocusedTextColor = Color.White,
+                        focusedBorderColor = CyberPurple, unfocusedBorderColor = SoftLilac.copy(alpha = 0.5f)
                     ),
                     modifier = Modifier.fillMaxWidth()
                 )
@@ -223,4 +245,86 @@ fun AddStudentDialog(onDismiss: () -> Unit, onAdd: (String, String, String, Stri
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text("انصراف", color = SoftLilac) } }
     )
+}
+
+@Composable
+fun SettingsDialog(
+    currentTemplateIn: String,
+    currentTemplateOut: String,
+    onDismiss: () -> Unit,
+    onSaveTemplates: (String, String) -> Unit,
+    onClearData: () -> Unit
+) {
+    var templateIn by remember { mutableStateOf(currentTemplateIn) }
+    var templateOut by remember { mutableStateOf(currentTemplateOut) }
+    var showClearConfirm by remember { mutableStateOf(false) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = DeepVelvetDark,
+        title = { Text("تنظیمات برنامه", color = Color.White) },
+        text = {
+            Column(
+                modifier = Modifier.verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                Text("قالب پیامک ورود:", color = SoftLilac, fontSize = 14.sp)
+                OutlinedTextField(
+                    value = templateIn,
+                    onValueChange = { templateIn = it },
+                    modifier = Modifier.fillMaxWidth().height(100.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedTextColor = Color.White, unfocusedTextColor = Color.White,
+                        focusedBorderColor = CyberPurple, unfocusedBorderColor = SoftLilac.copy(alpha = 0.5f)
+                    )
+                )
+
+                Text("قالب پیامک خروج:", color = SoftLilac, fontSize = 14.sp)
+                OutlinedTextField(
+                    value = templateOut,
+                    onValueChange = { templateOut = it },
+                    modifier = Modifier.fillMaxWidth().height(100.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedTextColor = Color.White, unfocusedTextColor = Color.White,
+                        focusedBorderColor = CyberPurple, unfocusedBorderColor = SoftLilac.copy(alpha = 0.5f)
+                    )
+                )
+
+                Text("متغیرهای مجاز: {name} (نام)، {date} (تاریخ)، {time} (ساعت)", color = SoftLilac.copy(alpha = 0.7f), fontSize = 12.sp)
+
+                TextButton(
+                    onClick = { showClearConfirm = true },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("پاک کردن تمام داده‌ها (Reset)", color = FieryCoral)
+                }
+                Text("نسخه برنامه: ۱.۲.۲", color = SoftLilac, fontSize = 12.sp)
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = { onSaveTemplates(templateIn, templateOut) }) {
+                Text("ذخیره", color = CyberPurple)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("بستن", color = SoftLilac) }
+        }
+    )
+
+    if (showClearConfirm) {
+        AlertDialog(
+            onDismissRequest = { showClearConfirm = false },
+            containerColor = DeepVelvetDark,
+            title = { Text("هشدار", color = FieryCoral) },
+            text = { Text("آیا مطمئن هستید؟ تمام دانش‌آموزان و سوابق پاک خواهند شد.", color = Color.White) },
+            confirmButton = {
+                TextButton(onClick = { onClearData(); showClearConfirm = false }) {
+                    Text("بله، پاک کن", color = FieryCoral)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showClearConfirm = false }) { Text("انصراف", color = SoftLilac) }
+            }
+        )
+    }
 }
