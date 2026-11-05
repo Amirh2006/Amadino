@@ -4,8 +4,8 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.amadino.app.data.local.UserDataManager
-import com.amadino.app.data.sms.SmsSender
 import com.amadino.app.data.sms.SmsSendResult
+import com.amadino.app.data.sms.SmsSender
 import com.amadino.app.ui.components.DashboardStats
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -77,13 +77,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun performAction(action: String) {
         val studentId = _uiState.value.selectedStudentId ?: return
         val today = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
-        val currentSlot = "08:00 - 09:00" // Default slot for testing
+        val currentSlot = "08:00 - 09:00"
 
         viewModelScope.launch {
             withContext(Dispatchers.IO) {
                 when (action) {
                     "CHECK_IN" -> userDataManager.updateStudentStatus(studentId, today, currentSlot, "PRESENT")
-                    "CHECK_OUT" -> userDataManager.updateStudentStatus(studentId, today, currentSlot, "ABSENT") // Simplified for demo
+                    "CHECK_OUT" -> userDataManager.updateStudentStatus(studentId, today, currentSlot, "ABSENT")
                 }
             }
             loadData()
@@ -109,9 +109,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun addStudent(name: String, phone: String) {
+    fun addStudent(name: String, phone: String, className: String, school: String, field: String) {
         viewModelScope.launch {
-            withContext(Dispatchers.IO) { userDataManager.addStudent(name, phone) }
+            withContext(Dispatchers.IO) { userDataManager.addStudent(name, phone, className, school, field) }
             loadData()
         }
     }

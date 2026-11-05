@@ -50,7 +50,7 @@ class UserDataManager(private val context: Context) {
                 val slotRecord = dayRecord.optJSONObject(slot) ?: JSONObject().also { dayRecord.put(slot, it) }
 
                 slotRecord.put("status", status)
-                if (status == "PRESENT") slotRecord.put("check_in_time", "08:05") // Dummy time for now
+                if (status == "PRESENT") slotRecord.put("check_in_time", "08:05")
                 if (status == "ABSENT") {
                     slotRecord.put("check_in_time", JSONObject.NULL)
                     slotRecord.put("check_out_time", JSONObject.NULL)
@@ -73,13 +73,16 @@ class UserDataManager(private val context: Context) {
         writeUsers(users)
     }
 
-    suspend fun addStudent(name: String, phone: String) {
+    suspend fun addStudent(name: String, phone: String, className: String, school: String, field: String) {
         val users = readUsers()
         val studentsArray = users.optJSONArray("students") ?: JSONArray().also { users.put("students", it) }
         studentsArray.put(JSONObject().apply {
             put("id", UUID.randomUUID().toString())
             put("name", name)
             put("parent_phone", phone)
+            put("class_name", className)
+            put("school", school)
+            put("field", field)
             put("attendance", JSONObject())
         })
         writeUsers(users)
