@@ -7,6 +7,7 @@ import com.amadino.app.data.local.UserDataManager
 import com.amadino.app.data.sms.SmsSendResult
 import com.amadino.app.data.sms.SmsSender
 import com.amadino.app.ui.components.DashboardStats
+import com.amadino.app.utils.getCurrentJalaliDate
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -24,6 +25,8 @@ data class MainUiState(
     val stats: DashboardStats = DashboardStats(0, 0, 0),
     val students: List<StudentUiModel> = emptyList(),
     val selectedStudentId: String? = null,
+    val smsTemplateIn: String = "",
+    val smsTemplateOut: String = "",
     val isLoading: Boolean = true
 )
 
@@ -43,6 +46,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             val today = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
             val json = withContext(Dispatchers.IO) { userDataManager.readUsers() }
             val studentsArray = json.optJSONArray("students")
+            val templates = withContext(Dispatchers.IO) { userDataManager.getSmsTemplates() }
 
             var present = 0; var absent = 0; var sms = 0
             val studentList = mutableListOf<StudentUiModel>()
@@ -66,7 +70,15 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     }
                 }
             }
-            _uiState.update { it.copy(stats = DashboardStats(present, absent, sms), students = studentList, isLoading = false) }
+            _uiState.update {
+                it.copy(
+                    stats = DashboardStats(present, absent, sms),
+                    students = studentList,
+                    smsTemplateIn = templates.first,
+                    smsTemplateOut = templates.second,
+                    isLoading = false
+                )
+            }
         }
     }
 
@@ -90,14 +102,26 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun sendSmsToSelected(onResult: (String) -> Unit) {
+    fun sendSmsToSelected(smsType: String, onResult: (String) -> Unit) {
         val student = _uiState.value.students.find { it.id == _uiState.value.selectedStudentId } ?: return
         val today = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
         val currentSlot = "08:00 - 09:00"
 
+        // Calculate dynamic variables
+        val currentTime = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
+        val jalaliDate = getCurrentJalaliDate()
+
+        val template = if (smsType == "IN") _uiState.value.smsTemplateIn else _uiState.value.smsTemplateOut
+
+        // Replace placeholders with actual data
+        val finalMessage = template
+            .replace("{name}", student.name)
+            .replace("{date}", jalaliDate)
+            .replace("{time}", currentTime)
+
         viewModelScope.launch {
             val result = withContext(Dispatchers.IO) {
-                smsSender.send(student.phone, "دانش‌آموز عزیز، وضعیت شما ثبت شد.")
+                smsSender.send(student.phone, finalMessage)
             }
             if (result is SmsSendResult.Success) {
                 withContext(Dispatchers.IO) { userDataManager.updateSmsStatus(student.id, today, currentSlot, "SENT") }
@@ -113,6 +137,21 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             withContext(Dispatchers.IO) { userDataManager.addStudent(name, phone, className, school, field) }
             loadData()
+        }
+    }
+
+    fun saveSmsTemplates(templateIn: String, templateOut: String) {
+        viewModelScope.launch {
+            withContext(Dispatchers.IO) { userDataManager.saveSmsTemplates(templateIn, templateOut) }
+            loadData()
+        }
+    }
+
+    fun clearAllData(onComplete: () -> Unit) {
+        viewModelScope.launch {
+            withContext(Dispatchers.IO) { userDataManager.clearAllData() }
+            loadData()
+            onComplete()
         }
     }
 

@@ -14,11 +14,18 @@ class UserDataManager(private val context: Context) {
     private val fileName = "users.json"
     private val mutex = Mutex()
 
+    private val defaultTemplateIn = "دانش‌آموز {name} در تاریخ {date} ساعت {time} وارد آموزشگاه شد."
+    private val defaultTemplateOut = "دانش‌آموز {name} در تاریخ {date} ساعت {time} از آموزشگاه خارج شد."
+
     suspend fun readUsers(): JSONObject = mutex.withLock {
         val file = File(context.filesDir, fileName)
         if (!file.exists()) {
             val defaultJson = JSONObject().apply {
-                put("schema_version", "1.2.1")
+                put("schema_version", "1.2.2")
+                put("settings", JSONObject().apply {
+                    put("sms_template_in", defaultTemplateIn)
+                    put("sms_template_out", defaultTemplateOut)
+                })
                 put("shifts", JSONArray().apply { put(JSONObject().put("time", "08:00 - 09:00")) })
                 put("students", JSONArray())
             }
@@ -26,7 +33,7 @@ class UserDataManager(private val context: Context) {
             return@withLock defaultJson
         }
         return@withLock try { JSONObject(file.readText()) } catch (e: Exception) {
-            JSONObject().apply { put("schema_version", "1.2.1"); put("students", JSONArray()) }
+            JSONObject().apply { put("schema_version", "1.2.2"); put("students", JSONArray()) }
         }
     }
 
@@ -37,6 +44,27 @@ class UserDataManager(private val context: Context) {
             tempFile.writeText(json.toString(4))
             tempFile.renameTo(file)
         } catch (e: Exception) { Log.e("UserDataManager", "Write error", e) }
+    }
+
+    suspend fun getSmsTemplates(): Pair<String, String> {
+        val json = readUsers()
+        val settings = json.optJSONObject("settings")
+        val inT = settings?.optString("sms_template_in").takeUnless { it.isNullOrBlank() } ?: defaultTemplateIn
+        val outT = settings?.optString("sms_template_out").takeUnless { it.isNullOrBlank() } ?: defaultTemplateOut
+        return Pair(inT, outT)
+    }
+
+    suspend fun saveSmsTemplates(templateIn: String, templateOut: String) {
+        val json = readUsers()
+        val settings = json.optJSONObject("settings") ?: JSONObject().also { json.put("settings", it) }
+        settings.put("sms_template_in", templateIn)
+        settings.put("sms_template_out", templateOut)
+        writeUsers(json)
+    }
+
+    suspend fun clearAllData() {
+        val file = File(context.filesDir, fileName)
+        if (file.exists()) file.delete()
     }
 
     suspend fun updateStudentStatus(studentId: String, date: String, slot: String, status: String) {
