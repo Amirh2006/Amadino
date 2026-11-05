@@ -1,4 +1,3 @@
-
 package com.amadino.app.data.local
 
 import android.content.Context
@@ -8,101 +7,95 @@ import kotlinx.coroutines.sync.withLock
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
+import java.util.UUID
 
-/**
- * Manages safe read/write operations for the users.json local database.
- * Uses Mutex to prevent concurrent writes and atomic file replacement.
- */
 class UserDataManager(private val context: Context) {
 
     private val fileName = "users.json"
     private val mutex = Mutex()
 
-    /**
-     * Safely reads the users.json file.
-     * If the file doesn't exist, it creates a default structure.
-     */
     suspend fun readUsers(): JSONObject = mutex.withLock {
         val file = File(context.filesDir, fileName)
         if (!file.exists()) {
             val defaultJson = JSONObject().apply {
-                put("schema_version", "1.2.0")
+                put("schema_version", "1.2.1")
+                put("shifts", JSONArray().apply { put(JSONObject().put("time", "08:00 - 09:00")) })
                 put("students", JSONArray())
             }
             file.writeText(defaultJson.toString())
             return@withLock defaultJson
         }
-
-        return@withLock try {
-            JSONObject(file.readText())
-        } catch (e: Exception) {
-            Log.e("UserDataManager", "Error reading JSON, returning empty structure", e)
-            JSONObject().apply {
-                put("schema_version", "1.2.0")
-                put("students", JSONArray())
-            }
+        return@withLock try { JSONObject(file.readText()) } catch (e: Exception) {
+            JSONObject().apply { put("schema_version", "1.2.1"); put("students", JSONArray()) }
         }
     }
 
-    /**
-     * Safely writes to users.json using an atomic write pattern.
-     * (Writes to a .tmp file, then replaces the original).
-     */
     suspend fun writeUsers(json: JSONObject) = mutex.withLock {
         val file = File(context.filesDir, fileName)
         val tempFile = File(context.filesDir, "$fileName.tmp")
-
         try {
-            // 1. Write to temp file
-            tempFile.writeText(json.toString(4)) // 4 spaces indent for readability
-
-            // 2. Replace original file (Atomic operation)
-            if (tempFile.renameTo(file)) {
-                Log.d("UserDataManager", "users.json updated successfully")
-            } else {
-                Log.e("UserDataManager", "Failed to replace users.json")
-            }
-        } catch (e: Exception) {
-            Log.e("UserDataManager", "Error writing to JSON", e)
-        }
+            tempFile.writeText(json.toString(4))
+            tempFile.renameTo(file)
+        } catch (e: Exception) { Log.e("UserDataManager", "Write error", e) }
     }
 
-    /**
-     * Finalize Logic: Marks all unfilled slots for TODAY as ABSENT.
-     * This should be called when the user clicks "تایید و ثبت نهایی".
-     */
-    suspend fun finalizeDay(date: String) {
+    suspend fun updateStudentStatus(studentId: String, date: String, slot: String, status: String) {
         val users = readUsers()
-        val studentsArray = users.optJSONArray("students") ?: return
+        val students = users.optJSONArray("students") ?: return
+        for (i in 0 until students.length()) {
+            val student = students.getJSONObject(i)
+            if (student.optString("id") == studentId) {
+                val attendance = student.optJSONObject("attendance") ?: JSONObject().also { student.put("attendance", it) }
+                val dayRecord = attendance.optJSONObject(date) ?: JSONObject().also { attendance.put(date, it) }
+                val slotRecord = dayRecord.optJSONObject(slot) ?: JSONObject().also { dayRecord.put(slot, it) }
 
-        for (i in 0 until studentsArray.length()) {
-            val student = studentsArray.getJSONObject(i)
-            // Ensure attendance object exists
-            val attendance = student.optJSONObject("attendance") ?: JSONObject().also {
-                student.put("attendance", it)
-            }
-
-            // Get or create the day's record
-            val dayRecord = attendance.optJSONObject(date) ?: JSONObject().also {
-                attendance.put(date, it)
-            }
-
-            // Here we assume we have a list of all possible slots.
-            // For now, if a slot exists but is NOT_RECORDED, we mark it ABSENT.
-            // If your app defines slots globally, you can iterate over them here.
-            val keys = dayRecord.keys()
-            while (keys.hasNext()) {
-                val slotTime = keys.next()
-                val slotData = dayRecord.getJSONObject(slotTime)
-
-                if (slotData.optString("status") == "NOT_RECORDED") {
-                    slotData.put("status", "ABSENT")
-                    Log.d("UserDataManager", "Marked ${student.optString("name")} as ABSENT for $slotTime")
+                slotRecord.put("status", status)
+                if (status == "PRESENT") slotRecord.put("check_in_time", "08:05") // Dummy time for now
+                if (status == "ABSENT") {
+                    slotRecord.put("check_in_time", JSONObject.NULL)
+                    slotRecord.put("check_out_time", JSONObject.NULL)
                 }
             }
         }
+        writeUsers(users)
+    }
 
-        // Save back to file
+    suspend fun updateSmsStatus(studentId: String, date: String, slot: String, smsStatus: String) {
+        val users = readUsers()
+        val students = users.optJSONArray("students") ?: return
+        for (i in 0 until students.length()) {
+            val student = students.getJSONObject(i)
+            if (student.optString("id") == studentId) {
+                val slotRecord = student.optJSONObject("attendance")?.optJSONObject(date)?.optJSONObject(slot)
+                slotRecord?.put("sms_status", smsStatus)
+            }
+        }
+        writeUsers(users)
+    }
+
+    suspend fun addStudent(name: String, phone: String) {
+        val users = readUsers()
+        val studentsArray = users.optJSONArray("students") ?: JSONArray().also { users.put("students", it) }
+        studentsArray.put(JSONObject().apply {
+            put("id", UUID.randomUUID().toString())
+            put("name", name)
+            put("parent_phone", phone)
+            put("attendance", JSONObject())
+        })
+        writeUsers(users)
+    }
+
+    suspend fun finalizeDay(date: String) {
+        val users = readUsers()
+        val studentsArray = users.optJSONArray("students") ?: return
+        for (i in 0 until studentsArray.length()) {
+            val attendance = studentsArray.getJSONObject(i).optJSONObject("attendance")?.optJSONObject(date) ?: continue
+            val keys = attendance.keys()
+            while (keys.hasNext()) {
+                val slot = attendance.getJSONObject(keys.next())
+                if (slot.optString("status") == "NOT_RECORDED") slot.put("status", "ABSENT")
+            }
+        }
         writeUsers(users)
     }
 }

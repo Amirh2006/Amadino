@@ -39,10 +39,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.amadino.app.data.sms.hasSmsPermission
 import com.amadino.app.domain.model.SmsEventType
 import com.amadino.app.ui.components.EmptyState
 import com.amadino.app.ui.components.formatTimeRange
+import com.amadino.app.utils.hasSmsPermission
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

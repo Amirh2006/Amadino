@@ -1,32 +1,129 @@
-package com.amadino.app.ui // Replace with your actual package name
+package com.amadino.app.ui
 
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.amadino.app.data.local.UserDataManager
+import com.amadino.app.data.sms.SmsSender
+import com.amadino.app.data.sms.SmsSendResult
+import com.amadino.app.ui.components.DashboardStats
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+
+data class StudentUiModel(val id: String, val name: String, val phone: String)
+
+data class MainUiState(
+    val stats: DashboardStats = DashboardStats(0, 0, 0),
+    val students: List<StudentUiModel> = emptyList(),
+    val selectedStudentId: String? = null,
+    val isLoading: Boolean = true
+)
 
 class MainViewModel(application: Application) : AndroidViewModel(application) {
 
-    // Instantiate the UserDataManager with the app context
     private val userDataManager = UserDataManager(application.applicationContext)
+    private val smsSender = SmsSender(application.applicationContext)
 
-    /**
-     * Calls the finalize logic from UserDataManager on a background thread.
-     */
-    fun finalizeDay(date: String, onComplete: (Boolean) -> Unit) {
+    private val _uiState = MutableStateFlow(MainUiState())
+    val uiState: StateFlow<MainUiState> = _uiState.asStateFlow()
+
+    init { loadData() }
+
+    fun loadData() {
         viewModelScope.launch {
-            val isSuccess = withContext(Dispatchers.IO) {
-                try {
-                    userDataManager.finalizeDay(date)
-                    true
-                } catch (e: Exception) {
-                    false
+            _uiState.update { it.copy(isLoading = true) }
+            val today = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
+            val json = withContext(Dispatchers.IO) { userDataManager.readUsers() }
+            val studentsArray = json.optJSONArray("students")
+
+            var present = 0; var absent = 0; var sms = 0
+            val studentList = mutableListOf<StudentUiModel>()
+
+            if (studentsArray != null) {
+                for (i in 0 until studentsArray.length()) {
+                    val std = studentsArray.getJSONObject(i)
+                    studentList.add(StudentUiModel(std.optString("id"), std.optString("name"), std.optString("parent_phone")))
+
+                    val att = std.optJSONObject("attendance")?.optJSONObject(today)
+                    if (att != null) {
+                        val keys = att.keys()
+                        while (keys.hasNext()) {
+                            val slot = att.getJSONObject(keys.next())
+                            when (slot.optString("status")) {
+                                "PRESENT", "LATE" -> present++
+                                "ABSENT" -> absent++
+                            }
+                            if (slot.optString("sms_status") == "SENT") sms++
+                        }
+                    }
                 }
             }
-            onComplete(isSuccess)
+            _uiState.update { it.copy(stats = DashboardStats(present, absent, sms), students = studentList, isLoading = false) }
+        }
+    }
+
+    fun selectStudent(id: String?) {
+        _uiState.update { it.copy(selectedStudentId = id) }
+    }
+
+    fun performAction(action: String) {
+        val studentId = _uiState.value.selectedStudentId ?: return
+        val today = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
+        val currentSlot = "08:00 - 09:00" // Default slot for testing
+
+        viewModelScope.launch {
+            withContext(Dispatchers.IO) {
+                when (action) {
+                    "CHECK_IN" -> userDataManager.updateStudentStatus(studentId, today, currentSlot, "PRESENT")
+                    "CHECK_OUT" -> userDataManager.updateStudentStatus(studentId, today, currentSlot, "ABSENT") // Simplified for demo
+                }
+            }
+            loadData()
+        }
+    }
+
+    fun sendSmsToSelected(onResult: (String) -> Unit) {
+        val student = _uiState.value.students.find { it.id == _uiState.value.selectedStudentId } ?: return
+        val today = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
+        val currentSlot = "08:00 - 09:00"
+
+        viewModelScope.launch {
+            val result = withContext(Dispatchers.IO) {
+                smsSender.send(student.phone, "دانش‌آموز عزیز، وضعیت شما ثبت شد.")
+            }
+            if (result is SmsSendResult.Success) {
+                withContext(Dispatchers.IO) { userDataManager.updateSmsStatus(student.id, today, currentSlot, "SENT") }
+                loadData()
+                onResult("پیامک با موفقیت ارسال شد")
+            } else {
+                onResult("خطا در ارسال پیامک")
+            }
+        }
+    }
+
+    fun addStudent(name: String, phone: String) {
+        viewModelScope.launch {
+            withContext(Dispatchers.IO) { userDataManager.addStudent(name, phone) }
+            loadData()
+        }
+    }
+
+    fun finalizeDay(onComplete: (Boolean) -> Unit) {
+        val today = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
+        viewModelScope.launch {
+            val success = withContext(Dispatchers.IO) {
+                try { userDataManager.finalizeDay(today); true } catch (e: Exception) { false }
+            }
+            if (success) loadData()
+            onComplete(success)
         }
     }
 }

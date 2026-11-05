@@ -40,12 +40,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.amadino.app.data.local.entity.SmsLogEntity
 import com.amadino.app.data.sms.SmsDeliveryStatus
-import com.amadino.app.data.sms.hasSmsPermission
+
 import com.amadino.app.ui.components.EmptyState
 import com.amadino.app.ui.components.SmsCounterChip
 import com.amadino.app.ui.components.SmsStatusChip
 import com.amadino.app.ui.components.formatDateTime
-
+import com.amadino.app.utils.hasSmsPermission
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SmsLogScreen(
