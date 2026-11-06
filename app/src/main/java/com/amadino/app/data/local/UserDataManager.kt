@@ -62,7 +62,6 @@ class UserDataManager(private val context: Context) {
         writeUsers(json)
     }
 
-    // --- Shift Management Methods ---
     suspend fun addShift(time: String) {
         val json = readUsers()
         val shifts = json.optJSONArray("shifts") ?: JSONArray().also { json.put("shifts", it) }
@@ -99,7 +98,6 @@ class UserDataManager(private val context: Context) {
         json.put("shifts", newShifts)
         writeUsers(json)
     }
-    // --------------------------------
 
     suspend fun clearAllData() {
         val file = File(context.filesDir, fileName)

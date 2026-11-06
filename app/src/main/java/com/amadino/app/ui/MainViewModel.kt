@@ -22,10 +22,15 @@ import java.util.Locale
 data class StudentUiModel(val id: String, val name: String, val phone: String)
 data class ShiftUiModel(val id: String, val time: String)
 
+// New Data Models for History
+data class HistoryRecordUiModel(val studentName: String, val status: String, val time: String)
+data class HistoryDateUiModel(val date: String, val records: List<HistoryRecordUiModel>)
+
 data class MainUiState(
     val stats: DashboardStats = DashboardStats(0, 0, 0),
     val students: List<StudentUiModel> = emptyList(),
-    val shifts: List<ShiftUiModel> = emptyList(), // Added shifts list
+    val shifts: List<ShiftUiModel> = emptyList(),
+    val history: List<HistoryDateUiModel> = emptyList(), // Added History
     val selectedStudentId: String? = null,
     val smsTemplateIn: String = "",
     val smsTemplateOut: String = "",
@@ -55,6 +60,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             val studentList = mutableListOf<StudentUiModel>()
             val shiftList = mutableListOf<ShiftUiModel>()
 
+            // Map to store history: Date -> List of Records
+            val historyMap = mutableMapOf<String, MutableList<HistoryRecordUiModel>>()
+
             if (shiftsArray != null) {
                 for (i in 0 until shiftsArray.length()) {
                     val shift = shiftsArray.getJSONObject(i)
@@ -65,27 +73,67 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             if (studentsArray != null) {
                 for (i in 0 until studentsArray.length()) {
                     val std = studentsArray.getJSONObject(i)
-                    studentList.add(StudentUiModel(std.optString("id"), std.optString("name"), std.optString("parent_phone")))
+                    val studentName = std.optString("name")
+                    studentList.add(StudentUiModel(std.optString("id"), studentName, std.optString("parent_phone")))
 
-                    val att = std.optJSONObject("attendance")?.optJSONObject(today)
-                    if (att != null) {
-                        val keys = att.keys()
-                        while (keys.hasNext()) {
-                            val slot = att.getJSONObject(keys.next())
-                            when (slot.optString("status")) {
-                                "PRESENT", "LATE" -> present++
-                                "ABSENT" -> absent++
+                    val attendance = std.optJSONObject("attendance")
+                    if (attendance != null) {
+                        val dates = attendance.keys()
+                        while (dates.hasNext()) {
+                            val date = dates.next()
+                            val dayRecord = attendance.optJSONObject(date)
+
+                            if (date == today && dayRecord != null) {
+                                // Calculate today's stats
+                                val slots = dayRecord.keys()
+                                while (slots.hasNext()) {
+                                    val slot = dayRecord.getJSONObject(slots.next())
+                                    when (slot.optString("status")) {
+                                        "PRESENT", "LATE" -> present++
+                                        "ABSENT" -> absent++
+                                    }
+                                    if (slot.optString("sms_status") == "SENT") sms++
+                                }
                             }
-                            if (slot.optString("sms_status") == "SENT") sms++
+
+                            // Build History
+                            if (dayRecord != null) {
+                                val slots = dayRecord.keys()
+                                while (slots.hasNext()) {
+                                    val slotTime = slots.next()
+                                    val slotData = dayRecord.getJSONObject(slotTime)
+                                    val status = slotData.optString("status")
+
+                                    if (status != "NOT_RECORDED") {
+                                        val statusFa = when(status) {
+                                            "PRESENT" -> "حاضر"
+                                            "ABSENT" -> "غایب"
+                                            "LATE" -> "تاخیر"
+                                            else -> status
+                                        }
+                                        val checkIn = slotData.optString("check_in_time", "--")
+                                        val rec = HistoryRecordUiModel(studentName, statusFa, checkIn)
+
+                                        historyMap.getOrPut(date) { mutableListOf() }.add(rec)
+                                    }
+                                }
+                            }
                         }
                     }
                 }
             }
+
+            // Sort history by date (descending)
+            val historyList = historyMap.map { (date, records) ->
+                HistoryDateUiModel(date, records)
+            }.sortedByDescending { it.date }
+
             _uiState.update {
                 it.copy(
                     stats = DashboardStats(present, absent, sms),
                     students = studentList,
                     shifts = shiftList,
+                    history = historyList,
                     smsTemplateIn = templates.first,
                     smsTemplateOut = templates.second,
                     isLoading = false
@@ -94,7 +142,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    // --- Shift Methods ---
+    // ... (Shift Methods, performAction, sendSmsToSelected, addStudent, saveSmsTemplates, clearAllData, finalizeDay remain exactly the same)
     fun addShift(time: String) {
         viewModelScope.launch {
             withContext(Dispatchers.IO) { userDataManager.addShift(time) }
@@ -115,7 +163,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             loadData()
         }
     }
-    // --------------------
 
     fun selectStudent(id: String?) {
         _uiState.update { it.copy(selectedStudentId = id) }
