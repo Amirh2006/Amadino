@@ -10,6 +10,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -24,6 +25,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.amadino.app.ui.MainViewModel
+import com.amadino.app.ui.ShiftUiModel
 import com.amadino.app.ui.components.*
 import com.amadino.app.ui.theme.*
 
@@ -49,6 +51,7 @@ fun MainScreen(viewModel: MainViewModel) {
 
     var showAddDialog by remember { mutableStateOf(false) }
     var showSettingsDialog by remember { mutableStateOf(false) }
+    var showShiftsDialog by remember { mutableStateOf(false) }
 
     Scaffold(
         floatingActionButton = {
@@ -67,12 +70,44 @@ fun MainScreen(viewModel: MainViewModel) {
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                GlassButton("تاریخچه و غیرفعال‌ها", onClick = { Toast.makeText(context, "بخش تاریخچه", Toast.LENGTH_SHORT).show() })
+                GlassButton("مدیریت شیفت‌ها", onClick = { showShiftsDialog = true })
                 GlassButton("تنظیمات", onClick = { showSettingsDialog = true })
             }
 
             Spacer(modifier = Modifier.height(16.dp))
             DashboardStatsRow(stats = uiState.stats)
+
+            // --- Display Active Shifts ---
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                text = "شیفت‌های فعال امروز:",
+                color = SoftLilac,
+                fontSize = 14.sp,
+                modifier = Modifier.padding(horizontal = 16.dp)
+            )
+            LazyRow(
+                modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                contentPadding = PaddingValues(horizontal = 16.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                items(uiState.shifts) { shift ->
+                    Box(
+                        modifier = Modifier
+                            .background(GlassSurface, RoundedCornerShape(8.dp))
+                            .border(1.dp, ElectricAqua.copy(alpha = 0.5f), RoundedCornerShape(8.dp))
+                            .padding(horizontal = 12.dp, vertical = 6.dp)
+                    ) {
+                        Text(
+                            text = shift.time,
+                            color = Color.White,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+            }
+            // ----------------------------
+
             Spacer(modifier = Modifier.height(16.dp))
 
             Text("لیست دانش‌آموزان", color = SoftLilac, fontSize = 16.sp, modifier = Modifier.padding(horizontal = 16.dp))
@@ -98,7 +133,6 @@ fun MainScreen(viewModel: MainViewModel) {
 
             val isEnabled = uiState.selectedStudentId != null
             Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                // Action Buttons (Check-In / Check-Out)
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     GradientButton(
                         text = "ثبت ورود", iconText = "✔",
@@ -114,7 +148,6 @@ fun MainScreen(viewModel: MainViewModel) {
                     )
                 }
 
-                // SMS Buttons (SMS In / SMS Out)
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     GradientButton(
                         text = "پیامک ورود", iconText = "✉",
@@ -168,6 +201,116 @@ fun MainScreen(viewModel: MainViewModel) {
                 }
                 showSettingsDialog = false
             }
+        )
+    }
+
+    if (showShiftsDialog) {
+        ManageShiftsDialog(
+            shifts = uiState.shifts,
+            onDismiss = { showShiftsDialog = false },
+            onAddShift = { time -> viewModel.addShift(time) },
+            onUpdateShift = { id, time -> viewModel.updateShift(id, time) },
+            onDeleteShift = { id -> viewModel.deleteShift(id) }
+        )
+    }
+}
+
+// --- Dialogs (ManageShiftsDialog, AddStudentDialog, SettingsDialog) ---
+// (کدهای این بخش‌ها همان کدهای قبلی هستند و تغییری نکرده‌اند،
+// برای جلوگیری از طولانی شدن پاسخ، فقط بخش بالای فایل را جایگزین کنید و این دیالوگ‌ها را از نسخه قبل حفظ کنید)
+
+@Composable
+fun ManageShiftsDialog(
+    shifts: List<ShiftUiModel>,
+    onDismiss: () -> Unit,
+    onAddShift: (String) -> Unit,
+    onUpdateShift: (String, String) -> Unit,
+    onDeleteShift: (String) -> Unit
+) {
+    var newShiftTime by remember { mutableStateOf("") }
+    var editingShift by remember { mutableStateOf<ShiftUiModel?>(null) }
+    var showDeleteConfirm by remember { mutableStateOf<ShiftUiModel?>(null) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = DeepVelvetDark,
+        title = { Text("مدیریت شیفت‌ها", color = Color.White) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    OutlinedTextField(
+                        value = newShiftTime,
+                        onValueChange = { newShiftTime = it },
+                        label = { Text("شیفت جدید (08:00 - 09:00)", color = SoftLilac) },
+                        modifier = Modifier.weight(1f),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedTextColor = Color.White, unfocusedTextColor = Color.White,
+                            focusedBorderColor = CyberPurple, unfocusedBorderColor = SoftLilac.copy(alpha = 0.5f)
+                        )
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Button(
+                        onClick = { if (newShiftTime.isNotBlank()) { onAddShift(newShiftTime); newShiftTime = "" } },
+                        colors = ButtonDefaults.buttonColors(containerColor = CyberPurple)
+                    ) {
+                        Text("افزودن", color = Color.White)
+                    }
+                }
+
+                Divider(color = SoftLilac.copy(alpha = 0.2f))
+
+                LazyColumn(modifier = Modifier.heightIn(max = 300.dp)) {
+                    items(shifts) { shift ->
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(shift.time, color = Color.White)
+                            Row {
+                                TextButton(onClick = { editingShift = shift }) { Text("✎", color = ElectricAqua, fontSize = 20.sp) }
+                                TextButton(onClick = { showDeleteConfirm = shift }) { Text("🗑", color = FieryCoral, fontSize = 20.sp) }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = { TextButton(onClick = onDismiss) { Text("بستن", color = SoftLilac) } }
+    )
+
+    if (editingShift != null) {
+        var editedTime by remember { mutableStateOf(editingShift!!.time) }
+        AlertDialog(
+            onDismissRequest = { editingShift = null },
+            containerColor = DeepVelvetDark,
+            title = { Text("ویرایش شیفت", color = Color.White) },
+            text = {
+                OutlinedTextField(
+                    value = editedTime, onValueChange = { editedTime = it },
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedTextColor = Color.White, unfocusedTextColor = Color.White,
+                        focusedBorderColor = CyberPurple, unfocusedBorderColor = SoftLilac.copy(alpha = 0.5f)
+                    )
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = { onUpdateShift(editingShift!!.id, editedTime); editingShift = null }) { Text("ذخیره", color = CyberPurple) }
+            },
+            dismissButton = { TextButton(onClick = { editingShift = null }) { Text("انصراف", color = SoftLilac) } }
+        )
+    }
+
+    if (showDeleteConfirm != null) {
+        AlertDialog(
+            onDismissRequest = { showDeleteConfirm = null },
+            containerColor = DeepVelvetDark,
+            title = { Text("حذف شیفت", color = FieryCoral) },
+            text = { Text("آیا از حذف شیفت ${showDeleteConfirm!!.time} مطمئن هستید؟", color = Color.White) },
+            confirmButton = {
+                TextButton(onClick = { onDeleteShift(showDeleteConfirm!!.id); showDeleteConfirm = null }) { Text("حذف", color = FieryCoral) }
+            },
+            dismissButton = { TextButton(onClick = { showDeleteConfirm = null }) { Text("انصراف", color = SoftLilac) } }
         )
     }
 }
@@ -298,7 +441,7 @@ fun SettingsDialog(
                 ) {
                     Text("پاک کردن تمام داده‌ها (Reset)", color = FieryCoral)
                 }
-                Text("نسخه برنامه: ۱.۲.۲", color = SoftLilac, fontSize = 12.sp)
+                Text("نسخه برنامه: ۱.۲.۳", color = SoftLilac, fontSize = 12.sp)
             }
         },
         confirmButton = {

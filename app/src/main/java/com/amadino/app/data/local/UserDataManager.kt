@@ -21,19 +21,19 @@ class UserDataManager(private val context: Context) {
         val file = File(context.filesDir, fileName)
         if (!file.exists()) {
             val defaultJson = JSONObject().apply {
-                put("schema_version", "1.2.2")
+                put("schema_version", "1.2.3")
                 put("settings", JSONObject().apply {
                     put("sms_template_in", defaultTemplateIn)
                     put("sms_template_out", defaultTemplateOut)
                 })
-                put("shifts", JSONArray().apply { put(JSONObject().put("time", "08:00 - 09:00")) })
+                put("shifts", JSONArray().apply { put(JSONObject().apply { put("id", UUID.randomUUID().toString()); put("time", "08:00 - 09:00") }) })
                 put("students", JSONArray())
             }
             file.writeText(defaultJson.toString())
             return@withLock defaultJson
         }
         return@withLock try { JSONObject(file.readText()) } catch (e: Exception) {
-            JSONObject().apply { put("schema_version", "1.2.2"); put("students", JSONArray()) }
+            JSONObject().apply { put("schema_version", "1.2.3"); put("students", JSONArray()) }
         }
     }
 
@@ -61,6 +61,45 @@ class UserDataManager(private val context: Context) {
         settings.put("sms_template_out", templateOut)
         writeUsers(json)
     }
+
+    // --- Shift Management Methods ---
+    suspend fun addShift(time: String) {
+        val json = readUsers()
+        val shifts = json.optJSONArray("shifts") ?: JSONArray().also { json.put("shifts", it) }
+        shifts.put(JSONObject().apply {
+            put("id", UUID.randomUUID().toString())
+            put("time", time)
+        })
+        writeUsers(json)
+    }
+
+    suspend fun updateShift(shiftId: String, newTime: String) {
+        val json = readUsers()
+        val shifts = json.optJSONArray("shifts") ?: return
+        for (i in 0 until shifts.length()) {
+            val shift = shifts.getJSONObject(i)
+            if (shift.optString("id") == shiftId) {
+                shift.put("time", newTime)
+                break
+            }
+        }
+        writeUsers(json)
+    }
+
+    suspend fun deleteShift(shiftId: String) {
+        val json = readUsers()
+        val shifts = json.optJSONArray("shifts") ?: return
+        val newShifts = JSONArray()
+        for (i in 0 until shifts.length()) {
+            val shift = shifts.getJSONObject(i)
+            if (shift.optString("id") != shiftId) {
+                newShifts.put(shift)
+            }
+        }
+        json.put("shifts", newShifts)
+        writeUsers(json)
+    }
+    // --------------------------------
 
     suspend fun clearAllData() {
         val file = File(context.filesDir, fileName)

@@ -20,10 +20,12 @@ import java.util.Date
 import java.util.Locale
 
 data class StudentUiModel(val id: String, val name: String, val phone: String)
+data class ShiftUiModel(val id: String, val time: String)
 
 data class MainUiState(
     val stats: DashboardStats = DashboardStats(0, 0, 0),
     val students: List<StudentUiModel> = emptyList(),
+    val shifts: List<ShiftUiModel> = emptyList(), // Added shifts list
     val selectedStudentId: String? = null,
     val smsTemplateIn: String = "",
     val smsTemplateOut: String = "",
@@ -46,10 +48,19 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             val today = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
             val json = withContext(Dispatchers.IO) { userDataManager.readUsers() }
             val studentsArray = json.optJSONArray("students")
+            val shiftsArray = json.optJSONArray("shifts")
             val templates = withContext(Dispatchers.IO) { userDataManager.getSmsTemplates() }
 
             var present = 0; var absent = 0; var sms = 0
             val studentList = mutableListOf<StudentUiModel>()
+            val shiftList = mutableListOf<ShiftUiModel>()
+
+            if (shiftsArray != null) {
+                for (i in 0 until shiftsArray.length()) {
+                    val shift = shiftsArray.getJSONObject(i)
+                    shiftList.add(ShiftUiModel(shift.optString("id"), shift.optString("time")))
+                }
+            }
 
             if (studentsArray != null) {
                 for (i in 0 until studentsArray.length()) {
@@ -74,6 +85,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 it.copy(
                     stats = DashboardStats(present, absent, sms),
                     students = studentList,
+                    shifts = shiftList,
                     smsTemplateIn = templates.first,
                     smsTemplateOut = templates.second,
                     isLoading = false
@@ -82,6 +94,29 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    // --- Shift Methods ---
+    fun addShift(time: String) {
+        viewModelScope.launch {
+            withContext(Dispatchers.IO) { userDataManager.addShift(time) }
+            loadData()
+        }
+    }
+
+    fun updateShift(id: String, newTime: String) {
+        viewModelScope.launch {
+            withContext(Dispatchers.IO) { userDataManager.updateShift(id, newTime) }
+            loadData()
+        }
+    }
+
+    fun deleteShift(id: String) {
+        viewModelScope.launch {
+            withContext(Dispatchers.IO) { userDataManager.deleteShift(id) }
+            loadData()
+        }
+    }
+    // --------------------
+
     fun selectStudent(id: String?) {
         _uiState.update { it.copy(selectedStudentId = id) }
     }
@@ -89,7 +124,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun performAction(action: String) {
         val studentId = _uiState.value.selectedStudentId ?: return
         val today = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
-        val currentSlot = "08:00 - 09:00"
+        val currentSlot = _uiState.value.shifts.firstOrNull()?.time ?: "08:00 - 09:00"
 
         viewModelScope.launch {
             withContext(Dispatchers.IO) {
@@ -105,15 +140,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun sendSmsToSelected(smsType: String, onResult: (String) -> Unit) {
         val student = _uiState.value.students.find { it.id == _uiState.value.selectedStudentId } ?: return
         val today = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
-        val currentSlot = "08:00 - 09:00"
+        val currentSlot = _uiState.value.shifts.firstOrNull()?.time ?: "08:00 - 09:00"
 
-        // Calculate dynamic variables
         val currentTime = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
         val jalaliDate = getCurrentJalaliDate()
 
         val template = if (smsType == "IN") _uiState.value.smsTemplateIn else _uiState.value.smsTemplateOut
 
-        // Replace placeholders with actual data
         val finalMessage = template
             .replace("{name}", student.name)
             .replace("{date}", jalaliDate)
