@@ -15,6 +15,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
@@ -29,9 +30,11 @@ import androidx.compose.ui.unit.sp
 import com.amadino.app.ui.HistoryDateUiModel
 import com.amadino.app.ui.MainViewModel
 import com.amadino.app.ui.ShiftUiModel
+import com.amadino.app.ui.StudentUiModel
 import com.amadino.app.ui.components.*
 import com.amadino.app.ui.theme.*
 import com.amadino.app.utils.generateCsvString
+import com.amadino.app.utils.toPersianDigits
 
 class MainActivity : ComponentActivity() {
     private val viewModel: MainViewModel by viewModels()
@@ -57,6 +60,7 @@ fun MainScreen(viewModel: MainViewModel) {
     var showSettingsDialog by remember { mutableStateOf(false) }
     var showShiftsDialog by remember { mutableStateOf(false) }
     var showHistoryDialog by remember { mutableStateOf(false) }
+    var selectedProfileStudent by remember { mutableStateOf<StudentUiModel?>(null) } // New State
 
     Scaffold(
         floatingActionButton = {
@@ -112,15 +116,32 @@ fun MainScreen(viewModel: MainViewModel) {
             ) {
                 items(uiState.students) { student ->
                     val isSelected = student.id == uiState.selectedStudentId
-                    Box(
+                    Row(
                         modifier = Modifier
                             .fillMaxWidth()
                             .background(if (isSelected) CyberPurple.copy(alpha = 0.3f) else GlassSurface, RoundedCornerShape(12.dp))
                             .border(1.dp, if (isSelected) CyberPurple else Color.Transparent, RoundedCornerShape(12.dp))
                             .clickable { viewModel.selectStudent(if (isSelected) null else student.id) }
-                            .padding(16.dp)
+                            .padding(horizontal = 16.dp, vertical = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Text(student.name, color = Color.White, fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal)
+                        Text(
+                            text = student.name,
+                            color = Color.White,
+                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                            modifier = Modifier.weight(1f)
+                        )
+                        // Info Button to open profile
+                        Box(
+                            modifier = Modifier
+                                .size(28.dp)
+                                .background(SoftLilac.copy(alpha = 0.2f), CircleShape)
+                                .clickable { selectedProfileStudent = student },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text("ℹ️", fontSize = 14.sp, color = SoftLilac)
+                        }
                     }
                 }
             }
@@ -214,7 +235,49 @@ fun MainScreen(viewModel: MainViewModel) {
             onDismiss = { showHistoryDialog = false }
         )
     }
+
+    // --- New Profile Dialog ---
+    if (selectedProfileStudent != null) {
+        StudentProfileDialog(
+            student = selectedProfileStudent!!,
+            onDismiss = { selectedProfileStudent = null }
+        )
+    }
 }
+
+@Composable
+fun StudentProfileDialog(student: StudentUiModel, onDismiss: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = DeepVelvetDark,
+        title = { Text("پروفایل دانش‌آموز", color = Color.White) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                ProfileRow(label = "نام و نام خانوادگی", value = student.name, valueColor = Color.White)
+                ProfileRow(label = "موبایل والدین", value = toPersianDigits(student.phone), valueColor = SoftLilac)
+                ProfileRow(label = "کلاس", value = student.className, valueColor = ElectricAqua)
+                ProfileRow(label = "دبیرستان", value = student.school, valueColor = ElectricAqua)
+                ProfileRow(label = "رشته تحصیلی", value = student.field, valueColor = ElectricAqua)
+            }
+        },
+        confirmButton = { TextButton(onClick = onDismiss) { Text("بستن", color = SoftLilac) } }
+    )
+}
+
+@Composable
+fun ProfileRow(label: String, value: String, valueColor: Color) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Text(label, color = SoftLilac, fontSize = 14.sp)
+        Text(value, color = valueColor, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+    }
+}
+
+// --- Other Dialogs (History, ManageShifts, AddStudent, Settings) ---
+// (کدهای این دیالوگ‌ها دقیقاً مانند مرحله قبل هستند و تغییری نکرده‌اند، فقط نسخه در SettingsDialog آپدیت شده)
+// برای کوتاه شدن متن، از قرار دادن دوباره کدهای تکراری معذورم، لطفاً بقیه فایل را دست نزنید.
 
 @Composable
 fun HistoryDialog(
@@ -224,7 +287,6 @@ fun HistoryDialog(
     val context = LocalContext.current
     var expandedDate by remember { mutableStateOf<String?>(null) }
 
-    // Launcher for creating a CSV file
     val createCsvLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.CreateDocument("text/csv")
     ) { uri ->
@@ -247,7 +309,6 @@ fun HistoryDialog(
         title = { Text("تاریخچه حضور و غیاب", color = Color.White) },
         text = {
             Column {
-                // Export Button
                 Button(
                     onClick = { createCsvLauncher.launch("Amadino_Report_${System.currentTimeMillis()}.csv") },
                     modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
@@ -321,8 +382,6 @@ fun HistoryDialog(
     )
 }
 
-// --- Other Dialogs (ManageShiftsDialog, AddStudentDialog, SettingsDialog) ---
-// (کدهای این بخش‌ها دقیقاً مانند نسخه قبلی هستند و تغییری نکرده‌اند)
 @Composable
 fun ManageShiftsDialog(
     shifts: List<ShiftUiModel>,
@@ -545,6 +604,7 @@ fun SettingsDialog(
                 ) {
                     Text("پاک کردن تمام داده‌ها (Reset)", color = FieryCoral)
                 }
+                // Updated Version Text
                 Text("نسخه برنامه: ۱.۲.۳", color = SoftLilac, fontSize = 12.sp)
             }
         },
