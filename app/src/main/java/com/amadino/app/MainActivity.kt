@@ -3,7 +3,9 @@ package com.amadino.app
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -29,7 +31,7 @@ import com.amadino.app.ui.MainViewModel
 import com.amadino.app.ui.ShiftUiModel
 import com.amadino.app.ui.components.*
 import com.amadino.app.ui.theme.*
-import com.amadino.app.utils.toPersianDigits
+import com.amadino.app.utils.generateCsvString
 
 class MainActivity : ComponentActivity() {
     private val viewModel: MainViewModel by viewModels()
@@ -54,7 +56,7 @@ fun MainScreen(viewModel: MainViewModel) {
     var showAddDialog by remember { mutableStateOf(false) }
     var showSettingsDialog by remember { mutableStateOf(false) }
     var showShiftsDialog by remember { mutableStateOf(false) }
-    var showHistoryDialog by remember { mutableStateOf(false) } // New state for History
+    var showHistoryDialog by remember { mutableStateOf(false) }
 
     Scaffold(
         floatingActionButton = {
@@ -73,8 +75,7 @@ fun MainScreen(viewModel: MainViewModel) {
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                // Connected to History Dialog
-                GlassButton("تاریخچه و غیرفعال‌ها", onClick = { showHistoryDialog = true })
+                GlassButton("تاریخچه", onClick = { showHistoryDialog = true })
                 GlassButton("مدیریت شیفت‌ها", onClick = { showShiftsDialog = true })
                 GlassButton("تنظیمات", onClick = { showSettingsDialog = true })
             }
@@ -207,7 +208,6 @@ fun MainScreen(viewModel: MainViewModel) {
         )
     }
 
-    // --- New History Dialog ---
     if (showHistoryDialog) {
         HistoryDialog(
             historyData = uiState.history,
@@ -221,63 +221,92 @@ fun HistoryDialog(
     historyData: List<HistoryDateUiModel>,
     onDismiss: () -> Unit
 ) {
+    val context = LocalContext.current
     var expandedDate by remember { mutableStateOf<String?>(null) }
+
+    // Launcher for creating a CSV file
+    val createCsvLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.CreateDocument("text/csv")
+    ) { uri ->
+        if (uri != null) {
+            try {
+                val csvContent = generateCsvString(historyData)
+                context.contentResolver.openOutputStream(uri)?.use { outputStream ->
+                    outputStream.write(csvContent.toByteArray(Charsets.UTF_8))
+                }
+                Toast.makeText(context, "فایل با موفقیت ذخیره شد", Toast.LENGTH_LONG).show()
+            } catch (e: Exception) {
+                Toast.makeText(context, "خطا در ذخیره فایل", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
 
     AlertDialog(
         onDismissRequest = onDismiss,
         containerColor = DeepVelvetDark,
         title = { Text("تاریخچه حضور و غیاب", color = Color.White) },
         text = {
-            if (historyData.isEmpty()) {
-                Text("هیچ سابقه‌ای ثبت نشده است.", color = SoftLilac)
-            } else {
-                LazyColumn(
-                    modifier = Modifier.heightIn(max = 400.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+            Column {
+                // Export Button
+                Button(
+                    onClick = { createCsvLauncher.launch("Amadino_Report_${System.currentTimeMillis()}.csv") },
+                    modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = ElectricAqua)
                 ) {
-                    items(historyData) { dateItem ->
-                        val isExpanded = expandedDate == dateItem.date
-                        Column {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .background(GlassSurface, RoundedCornerShape(8.dp))
-                                    .border(1.dp, CyberPurple.copy(alpha = 0.5f), RoundedCornerShape(8.dp))
-                                    .clickable { expandedDate = if (isExpanded) null else dateItem.date }
-                                    .padding(16.dp)
-                            ) {
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Text(dateItem.date, color = Color.White, fontWeight = FontWeight.Bold)
-                                    Text(if (isExpanded) "▲" else "▼", color = SoftLilac)
-                                }
-                            }
+                    Text("خروجی اکسل (CSV)", color = DeepVelvetDark, fontWeight = FontWeight.Bold)
+                }
 
-                            if (isExpanded) {
-                                Column(
+                if (historyData.isEmpty()) {
+                    Text("هیچ سابقه‌ای ثبت نشده است.", color = SoftLilac)
+                } else {
+                    LazyColumn(
+                        modifier = Modifier.heightIn(max = 350.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        items(historyData) { dateItem ->
+                            val isExpanded = expandedDate == dateItem.date
+                            Column {
+                                Box(
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .padding(start = 16.dp, top = 8.dp, bottom = 8.dp),
-                                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                                        .background(GlassSurface, RoundedCornerShape(8.dp))
+                                        .border(1.dp, CyberPurple.copy(alpha = 0.5f), RoundedCornerShape(8.dp))
+                                        .clickable { expandedDate = if (isExpanded) null else dateItem.date }
+                                        .padding(16.dp)
                                 ) {
-                                    dateItem.records.forEach { record ->
-                                        val statusColor = when(record.status) {
-                                            "حاضر" -> ElectricAqua
-                                            "غایب" -> FieryCoral
-                                            "تاخیر" -> SoftLilac
-                                            else -> Color.White
-                                        }
-                                        Row(
-                                            modifier = Modifier.fillMaxWidth(),
-                                            horizontalArrangement = Arrangement.SpaceBetween
-                                        ) {
-                                            Text(record.studentName, color = Color.White, fontSize = 14.sp)
-                                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                                Text(record.status, color = statusColor, fontSize = 14.sp, fontWeight = FontWeight.Bold)
-                                                Text("(${record.time})", color = SoftLilac, fontSize = 12.sp)
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text(dateItem.date, color = Color.White, fontWeight = FontWeight.Bold)
+                                        Text(if (isExpanded) "▲" else "▼", color = SoftLilac)
+                                    }
+                                }
+
+                                if (isExpanded) {
+                                    Column(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(start = 16.dp, top = 8.dp, bottom = 8.dp),
+                                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                                    ) {
+                                        dateItem.records.forEach { record ->
+                                            val statusColor = when(record.status) {
+                                                "حاضر" -> ElectricAqua
+                                                "غایب" -> FieryCoral
+                                                "تاخیر" -> SoftLilac
+                                                else -> Color.White
+                                            }
+                                            Row(
+                                                modifier = Modifier.fillMaxWidth(),
+                                                horizontalArrangement = Arrangement.SpaceBetween
+                                            ) {
+                                                Text(record.studentName, color = Color.White, fontSize = 14.sp)
+                                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                                    Text(record.status, color = statusColor, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                                                    Text("(${record.time})", color = SoftLilac, fontSize = 12.sp)
+                                                }
                                             }
                                         }
                                     }
@@ -293,8 +322,7 @@ fun HistoryDialog(
 }
 
 // --- Other Dialogs (ManageShiftsDialog, AddStudentDialog, SettingsDialog) ---
-// (کدهای این بخش‌ها همان کدهای قبلی هستند و بدون تغییر باقی می‌مانند)
-
+// (کدهای این بخش‌ها دقیقاً مانند نسخه قبلی هستند و تغییری نکرده‌اند)
 @Composable
 fun ManageShiftsDialog(
     shifts: List<ShiftUiModel>,
