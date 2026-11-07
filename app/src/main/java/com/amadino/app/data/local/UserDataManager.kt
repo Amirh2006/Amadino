@@ -21,10 +21,11 @@ class UserDataManager(private val context: Context) {
         val file = File(context.filesDir, fileName)
         if (!file.exists()) {
             val defaultJson = JSONObject().apply {
-                put("schema_version", "1.2.3")
+                put("schema_version", "1.2.4")
                 put("settings", JSONObject().apply {
                     put("sms_template_in", defaultTemplateIn)
                     put("sms_template_out", defaultTemplateOut)
+                    put("theme_name", "CyberViolet") // Default Theme
                 })
                 put("shifts", JSONArray().apply { put(JSONObject().apply { put("id", UUID.randomUUID().toString()); put("time", "08:00 - 09:00") }) })
                 put("students", JSONArray())
@@ -33,7 +34,7 @@ class UserDataManager(private val context: Context) {
             return@withLock defaultJson
         }
         return@withLock try { JSONObject(file.readText()) } catch (e: Exception) {
-            JSONObject().apply { put("schema_version", "1.2.3"); put("students", JSONArray()) }
+            JSONObject().apply { put("schema_version", "1.2.4"); put("students", JSONArray()) }
         }
     }
 
@@ -44,6 +45,18 @@ class UserDataManager(private val context: Context) {
             tempFile.writeText(json.toString(4))
             tempFile.renameTo(file)
         } catch (e: Exception) { Log.e("UserDataManager", "Write error", e) }
+    }
+
+    suspend fun getThemeName(): String {
+        val json = readUsers()
+        return json.optJSONObject("settings")?.optString("theme_name") ?: "CyberViolet"
+    }
+
+    suspend fun saveThemeName(themeName: String) {
+        val json = readUsers()
+        val settings = json.optJSONObject("settings") ?: JSONObject().also { json.put("settings", it) }
+        settings.put("theme_name", themeName)
+        writeUsers(json)
     }
 
     suspend fun getSmsTemplates(): Pair<String, String> {

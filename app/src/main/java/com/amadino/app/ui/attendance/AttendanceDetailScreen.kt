@@ -17,20 +17,19 @@ import com.amadino.app.domain.model.AttendanceStatus
 import com.amadino.app.domain.model.SlotAttendance
 import com.amadino.app.domain.model.StudentAttendanceDetail
 import com.amadino.app.ui.components.GlassCard
-import com.amadino.app.ui.theme.DeepVelvetDark
-import com.amadino.app.ui.theme.ElectricAqua
-import com.amadino.app.ui.theme.FieryCoral
-import com.amadino.app.ui.theme.SoftLilac
+import com.amadino.app.ui.theme.LocalAppColors // Import dynamic colors
 
 @Composable
 fun AttendanceDetailScreen(
     studentDetail: StudentAttendanceDetail,
     modifier: Modifier = Modifier
 ) {
+    val colors = LocalAppColors.current // Get current theme colors
+
     Column(
         modifier = modifier
             .fillMaxSize()
-            .background(DeepVelvetDark)
+            .background(colors.background)
             .padding(16.dp)
     ) {
         // Header: Student Info & Date
@@ -38,13 +37,13 @@ fun AttendanceDetailScreen(
             Column(modifier = Modifier.padding(16.dp)) {
                 Text(
                     text = studentDetail.studentName,
-                    color = Color.White,
+                    color = colors.textPrimary,
                     fontSize = 22.sp,
                     fontWeight = FontWeight.Bold
                 )
                 Text(
                     text = "تاریخ: ${studentDetail.date}",
-                    color = SoftLilac,
+                    color = colors.textPrimary.copy(alpha = 0.7f),
                     fontSize = 14.sp
                 )
             }
@@ -57,9 +56,9 @@ fun AttendanceDetailScreen(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Text("زنگ کلاسی", color = SoftLilac, fontSize = 12.sp)
-            Text("وضعیت", color = SoftLilac, fontSize = 12.sp)
-            Text("ساعت ورود/خروج", color = SoftLilac, fontSize = 12.sp)
+            Text("زنگ کلاسی", color = colors.textPrimary.copy(alpha = 0.7f), fontSize = 12.sp)
+            Text("وضعیت", color = colors.textPrimary.copy(alpha = 0.7f), fontSize = 12.sp)
+            Text("ساعت ورود/خروج", color = colors.textPrimary.copy(alpha = 0.7f), fontSize = 12.sp)
         }
 
         Spacer(modifier = Modifier.height(8.dp))
@@ -77,12 +76,14 @@ fun AttendanceDetailScreen(
 
 @Composable
 fun SlotDetailRow(slot: SlotAttendance) {
+    val colors = LocalAppColors.current
+
     // Determine color based on status
     val statusColor = when (slot.status) {
-        AttendanceStatus.PRESENT -> ElectricAqua
-        AttendanceStatus.LATE -> SoftLilac
-        AttendanceStatus.ABSENT -> FieryCoral
-        AttendanceStatus.NOT_RECORDED -> Color.Gray
+        AttendanceStatus.PRESENT -> colors.success
+        AttendanceStatus.LATE -> colors.textPrimary
+        AttendanceStatus.ABSENT -> colors.alert
+        AttendanceStatus.NOT_RECORDED -> colors.textPrimary.copy(alpha = 0.5f)
     }
 
     val statusText = when (slot.status) {
@@ -106,7 +107,7 @@ fun SlotDetailRow(slot: SlotAttendance) {
             // Slot Time
             Text(
                 text = slot.slotTime,
-                color = Color.White,
+                color = colors.textPrimary,
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Bold
             )
@@ -129,12 +130,12 @@ fun SlotDetailRow(slot: SlotAttendance) {
             Column(horizontalAlignment = Alignment.End) {
                 Text(
                     text = "ورود: ${slot.checkInTime ?: "--"}",
-                    color = SoftLilac,
+                    color = colors.textPrimary.copy(alpha = 0.8f),
                     fontSize = 12.sp
                 )
                 Text(
                     text = "خروج: ${slot.checkOutTime ?: "--"}",
-                    color = SoftLilac,
+                    color = colors.textPrimary.copy(alpha = 0.8f),
                     fontSize = 12.sp
                 )
             }

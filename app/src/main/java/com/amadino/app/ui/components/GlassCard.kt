@@ -1,4 +1,5 @@
 package com.amadino.app.ui.components
+
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -12,34 +13,27 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import com.amadino.app.ui.theme.CyberPurple
-import com.amadino.app.ui.theme.GlassBorder
-import com.amadino.app.ui.theme.GlassSurface
+import com.amadino.app.ui.theme.LocalAppColors
 
-/**
- * A reusable Glassmorphic Card component.
- * Provides a semi-transparent background, a glowing neon border, and rounded corners.
- */
 @Composable
 fun GlassCard(
     modifier: Modifier = Modifier,
     cornerRadius: Int = 24,
-    borderColor: Color = GlassBorder,
+    borderColor: Color = LocalAppColors.current.glassBorder,
     content: @Composable () -> Unit
 ) {
+    val colors = LocalAppColors.current
     Box(
         modifier = modifier
             .clip(RoundedCornerShape(cornerRadius.dp))
-            // Semi-transparent background for the glass effect
             .background(
                 brush = Brush.verticalGradient(
                     colors = listOf(
-                        GlassSurface.copy(alpha = 0.15f),
-                        GlassSurface.copy(alpha = 0.05f)
+                        colors.glassSurface,
+                        colors.glassSurface.copy(alpha = colors.glassSurface.alpha * 0.5f)
                     )
                 )
             )
-            // Glowing neon border
             .border(
                 border = BorderStroke(1.dp, borderColor),
                 shape = RoundedCornerShape(cornerRadius.dp)
@@ -49,4 +43,3 @@ fun GlassCard(
         content()
     }
 }
-

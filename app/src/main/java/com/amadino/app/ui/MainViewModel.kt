@@ -19,16 +19,10 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-// Updated to hold full student details
 data class StudentUiModel(
-    val id: String,
-    val name: String,
-    val phone: String,
-    val className: String,
-    val school: String,
-    val field: String
+    val id: String, val name: String, val phone: String,
+    val className: String, val school: String, val field: String
 )
-
 data class ShiftUiModel(val id: String, val time: String)
 data class HistoryRecordUiModel(val studentName: String, val status: String, val time: String)
 data class HistoryDateUiModel(val date: String, val records: List<HistoryRecordUiModel>)
@@ -41,6 +35,7 @@ data class MainUiState(
     val selectedStudentId: String? = null,
     val smsTemplateIn: String = "",
     val smsTemplateOut: String = "",
+    val themeName: String = "CyberViolet", // Added Theme State
     val isLoading: Boolean = true
 )
 
@@ -62,6 +57,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             val studentsArray = json.optJSONArray("students")
             val shiftsArray = json.optJSONArray("shifts")
             val templates = withContext(Dispatchers.IO) { userDataManager.getSmsTemplates() }
+            val currentTheme = withContext(Dispatchers.IO) { userDataManager.getThemeName() }
 
             var present = 0; var absent = 0; var sms = 0
             val studentList = mutableListOf<StudentUiModel>()
@@ -80,14 +76,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     val std = studentsArray.getJSONObject(i)
                     val studentName = std.optString("name")
 
-                    // Read full student details
                     studentList.add(StudentUiModel(
-                        id = std.optString("id"),
-                        name = studentName,
-                        phone = std.optString("parent_phone"),
-                        className = std.optString("class_name", "نامشخص"),
-                        school = std.optString("school", "نامشخص"),
-                        field = std.optString("field", "نامشخص")
+                        id = std.optString("id"), name = studentName, phone = std.optString("parent_phone"),
+                        className = std.optString("class_name", "نامشخص"), school = std.optString("school", "نامشخص"), field = std.optString("field", "نامشخص")
                     ))
 
                     val attendance = std.optJSONObject("attendance")
@@ -146,17 +137,24 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     history = historyList,
                     smsTemplateIn = templates.first,
                     smsTemplateOut = templates.second,
+                    themeName = currentTheme, // Apply Theme
                     isLoading = false
                 )
             }
         }
     }
 
-    // ... (Shift, Action, SMS, AddStudent, etc. methods remain the same)
+    fun changeTheme(themeName: String) {
+        viewModelScope.launch {
+            withContext(Dispatchers.IO) { userDataManager.saveThemeName(themeName) }
+            loadData()
+        }
+    }
+
+    // ... (بقیه متدهای شیفت، ورود/خروج، پیامک و غیره دقیقاً مانند قبل هستند)
     fun addShift(time: String) { viewModelScope.launch { withContext(Dispatchers.IO) { userDataManager.addShift(time) }; loadData() } }
     fun updateShift(id: String, newTime: String) { viewModelScope.launch { withContext(Dispatchers.IO) { userDataManager.updateShift(id, newTime) }; loadData() } }
     fun deleteShift(id: String) { viewModelScope.launch { withContext(Dispatchers.IO) { userDataManager.deleteShift(id) }; loadData() } }
-
     fun selectStudent(id: String?) { _uiState.update { it.copy(selectedStudentId = id) } }
 
     fun performAction(action: String) {
@@ -196,10 +194,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun addStudent(name: String, phone: String, className: String, school: String, field: String) {
-        viewModelScope.launch {
-            withContext(Dispatchers.IO) { userDataManager.addStudent(name, phone, className, school, field) }
-            loadData()
-        }
+        viewModelScope.launch { withContext(Dispatchers.IO) { userDataManager.addStudent(name, phone, className, school, field) }; loadData() }
     }
 
     fun saveSmsTemplates(templateIn: String, templateOut: String) {

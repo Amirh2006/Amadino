@@ -18,9 +18,7 @@ import androidx.compose.ui.text.style.TextDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.amadino.app.R
-import com.amadino.app.ui.theme.CyberPurple
-import com.amadino.app.ui.theme.ElectricAqua
-import com.amadino.app.ui.theme.SoftLilac
+import com.amadino.app.ui.theme.LocalAppColors // Import dynamic colors
 import com.amadino.app.utils.getCurrentJalaliDate
 import com.amadino.app.utils.toPersianDigits
 import kotlinx.coroutines.delay
@@ -30,6 +28,8 @@ import java.util.Locale
 
 @Composable
 fun BrandHeader(modifier: Modifier = Modifier) {
+    val colors = LocalAppColors.current // Get current theme colors
+
     Row(
         modifier = modifier
             .fillMaxWidth()
@@ -43,7 +43,8 @@ fun BrandHeader(modifier: Modifier = Modifier) {
                     .size(64.dp)
                     .background(
                         brush = Brush.radialGradient(
-                            colors = listOf(CyberPurple.copy(alpha = 0.6f), Color.Transparent)
+                            // Use dynamic accent color for the glow effect
+                            colors = listOf(colors.accent.copy(alpha = 0.6f), Color.Transparent)
                         ),
                         shape = CircleShape
                     )
@@ -62,7 +63,7 @@ fun BrandHeader(modifier: Modifier = Modifier) {
             Spacer(modifier = Modifier.height(4.dp))
             Text(
                 text = getCurrentJalaliDate(),
-                color = SoftLilac,
+                color = colors.textPrimary, // Dynamic text color
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Medium,
                 style = TextStyle(textDirection = TextDirection.Rtl)
@@ -73,6 +74,7 @@ fun BrandHeader(modifier: Modifier = Modifier) {
 
 @Composable
 fun LiveDigitalClock() {
+    val colors = LocalAppColors.current
     var currentTime by remember { mutableStateOf("") }
 
     LaunchedEffect(Unit) {
@@ -85,7 +87,7 @@ fun LiveDigitalClock() {
 
     Text(
         text = toPersianDigits(currentTime),
-        color = ElectricAqua,
+        color = colors.success, // Dynamic success color for the clock
         fontSize = 24.sp,
         fontWeight = FontWeight.Bold,
         letterSpacing = 2.sp,
