@@ -12,7 +12,6 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -64,9 +63,16 @@ fun MainScreen(viewModel: MainViewModel) {
 
     var showAddDialog by remember { mutableStateOf(false) }
     var showSettingsDialog by remember { mutableStateOf(false) }
-    var showShiftsDialog by remember { mutableStateOf(false) }
+    var showShiftsManagerDialog by remember { mutableStateOf(false) }
     var showHistoryDialog by remember { mutableStateOf(false) }
     var selectedProfileStudent by remember { mutableStateOf<StudentUiModel?>(null) }
+
+    // Popup Dialogs for selection
+    var showStudentSelectDialog by remember { mutableStateOf(false) }
+    var showShiftSelectDialog by remember { mutableStateOf(false) }
+
+    val activeShift = uiState.shifts.find { it.id == uiState.activeShiftId }
+    val activeStudent = uiState.students.find { it.id == uiState.selectedStudentId }
 
     Scaffold(
         floatingActionButton = {
@@ -77,196 +83,272 @@ fun MainScreen(viewModel: MainViewModel) {
         containerColor = colors.background
     ) { padding ->
         Column(
-            modifier = Modifier.fillMaxSize().padding(padding).background(colors.background)
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .background(colors.background)
+                .verticalScroll(rememberScrollState())
         ) {
             BrandHeader()
 
+            // Top Buttons Row
             Row(
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-                horizontalArrangement = Arrangement.SpaceBetween
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                GlassButton("تاریخچه", onClick = { showHistoryDialog = true })
-                GlassButton("مدیریت شیفت‌ها", onClick = { showShiftsDialog = true })
-                GlassButton("تنظیمات", onClick = { showSettingsDialog = true })
+                GlassButton("تاریخچه", onClick = { showHistoryDialog = true }, modifier = Modifier.weight(1f))
+                GlassButton("تنظیمات", onClick = { showSettingsDialog = true }, modifier = Modifier.weight(1f))
+                GlassButton("مدیریت شیفت‌ها", onClick = { showShiftsManagerDialog = true }, modifier = Modifier.weight(1.2f))
             }
 
             Spacer(modifier = Modifier.height(16.dp))
             DashboardStatsRow(stats = uiState.stats)
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
-            // RTL Fix: Shift Label
-            Text(
-                text = "شیفت‌های فعال امروز:",
-                color = colors.textPrimary,
-                fontSize = 14.sp,
+            // --- Selection Panel (Replaces Lists) ---
+            Row(
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-                textAlign = TextAlign.Right
-            )
-            LazyRow(
-                modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
-                contentPadding = PaddingValues(horizontal = 16.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                items(uiState.shifts) { shift ->
-                    Box(
-                        modifier = Modifier
-                            .background(colors.glassSurface, RoundedCornerShape(8.dp))
-                            .border(1.dp, colors.success.copy(alpha = 0.5f), RoundedCornerShape(8.dp))
-                            .padding(horizontal = 12.dp, vertical = 6.dp)
-                    ) {
-                        Text(shift.time, color = colors.textPrimary, fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // RTL Fix: Student List Label
-            Text(
-                text = "لیست دانش‌آموزان",
-                color = colors.textPrimary,
-                fontSize = 16.sp,
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-                textAlign = TextAlign.Right
-            )
-            LazyColumn(
-                modifier = Modifier.weight(1f).padding(horizontal = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-                contentPadding = PaddingValues(vertical = 8.dp)
-            ) {
-                items(uiState.students) { student ->
-                    val isSelected = student.id == uiState.selectedStudentId
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .background(if (isSelected) colors.accent.copy(alpha = 0.2f) else colors.glassSurface, RoundedCornerShape(12.dp))
-                            .border(1.dp, if (isSelected) colors.accent else Color.Transparent, RoundedCornerShape(12.dp))
-                            .clickable { viewModel.selectStudent(if (isSelected) null else student.id) }
-                            .padding(horizontal = 16.dp, vertical = 12.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
+                // Shift Selector Card
+                GlassCard(modifier = Modifier.weight(1f).clickable { showShiftSelectDialog = true }) {
+                    Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text("شیفت فعال", color = colors.textPrimary.copy(alpha = 0.7f), fontSize = 11.sp)
+                        Spacer(modifier = Modifier.height(4.dp))
                         Text(
-                            text = student.name,
-                            color = colors.textPrimary,
-                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                            modifier = Modifier.weight(1f)
+                            text = activeShift?.time ?: "انتخاب نشده",
+                            color = colors.accent,
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold
                         )
-                        Box(
-                            modifier = Modifier
-                                .size(28.dp)
-                                .background(colors.textPrimary.copy(alpha = 0.1f), CircleShape)
-                                .clickable { selectedProfileStudent = student },
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text("ℹ️", fontSize = 14.sp)
-                        }
+                    }
+                }
+
+                // Student Selector Card
+                GlassCard(modifier = Modifier.weight(1f).clickable { showStudentSelectDialog = true }) {
+                    Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text("دانش‌آموز", color = colors.textPrimary.copy(alpha = 0.7f), fontSize = 11.sp)
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = activeStudent?.name ?: "انتخاب نشده",
+                            color = colors.success,
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 1
+                        )
                     }
                 }
             }
 
-            val isEnabled = uiState.selectedStudentId != null
-            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // Action Buttons
+            val isEnabled = uiState.selectedStudentId != null && uiState.activeShiftId != null
+            Column(
+                modifier = Modifier.padding(horizontal = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     GradientButton(
                         text = "ثبت ورود", iconText = "✔",
                         gradientColors = listOf(colors.success, colors.success.copy(alpha = 0.7f)),
                         modifier = Modifier.weight(1f),
-                        onClick = { if (isEnabled) viewModel.performAction("CHECK_IN") else Toast.makeText(context, "ابتدا یک دانش‌آموز را انتخاب کنید", Toast.LENGTH_SHORT).show() }
+                        onClick = { if (isEnabled) viewModel.performAction("CHECK_IN") else Toast.makeText(context, "ابتدا شیفت و دانش‌آموز را انتخاب کنید", Toast.LENGTH_SHORT).show() }
                     )
                     GradientButton(
-                        text = "ثبت خروج", iconText = "✖",
-                        gradientColors = listOf(colors.alert, colors.alert.copy(alpha = 0.7f)),
+                        text = "ثبت خروج", iconText = "🚪",
+                        gradientColors = listOf(Color(0xFFFF9800), colors.alert),
                         modifier = Modifier.weight(1f),
-                        onClick = { if (isEnabled) viewModel.performAction("CHECK_OUT") else Toast.makeText(context, "ابتدا یک دانش‌آموز را انتخاب کنید", Toast.LENGTH_SHORT).show() }
+                        onClick = { if (isEnabled) viewModel.performAction("CHECK_OUT") else Toast.makeText(context, "ابتدا شیفت و دانش‌آموز را انتخاب کنید", Toast.LENGTH_SHORT).show() }
                     )
                 }
 
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     GradientButton(
+                        text = "ثبت غیبت", iconText = "🚫",
+                        gradientColors = listOf(colors.alert, Color(0xFFC62828)),
+                        modifier = Modifier.weight(1f),
+                        onClick = { if (isEnabled) viewModel.performAction("MARK_ABSENT") else Toast.makeText(context, "ابتدا شیفت و دانش‌آموز را انتخاب کنید", Toast.LENGTH_SHORT).show() }
+                    )
+                    GradientButton(
                         text = "پیامک ورود", iconText = "✉",
                         gradientColors = listOf(colors.accent, colors.accent.copy(alpha = 0.7f)),
                         modifier = Modifier.weight(1f),
-                        onClick = {
-                            if (isEnabled) viewModel.sendSmsToSelected("IN") { msg -> Toast.makeText(context, msg, Toast.LENGTH_SHORT).show() }
-                            else Toast.makeText(context, "ابتدا یک دانش‌آموز را انتخاب کنید", Toast.LENGTH_SHORT).show()
-                        }
+                        onClick = { if (isEnabled) viewModel.sendSmsToSelected("IN") { msg -> Toast.makeText(context, msg, Toast.LENGTH_SHORT).show() } else Toast.makeText(context, "ابتدا یک دانش‌آموز را انتخاب کنید", Toast.LENGTH_SHORT).show() }
                     )
+                }
+
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     GradientButton(
                         text = "پیامک خروج", iconText = "✉",
                         gradientColors = listOf(Color(0xFFE91E63), Color(0xFFC2185B)),
                         modifier = Modifier.weight(1f),
-                        onClick = {
-                            if (isEnabled) viewModel.sendSmsToSelected("OUT") { msg -> Toast.makeText(context, msg, Toast.LENGTH_SHORT).show() }
-                            else Toast.makeText(context, "ابتدا یک دانش‌آموز را انتخاب کنید", Toast.LENGTH_SHORT).show()
-                        }
+                        onClick = { if (isEnabled) viewModel.sendSmsToSelected("OUT") { msg -> Toast.makeText(context, msg, Toast.LENGTH_SHORT).show() } else Toast.makeText(context, "ابتدا یک دانش‌آموز را انتخاب کنید", Toast.LENGTH_SHORT).show() }
+                    )
+                    GradientButton(
+                        text = "ثبت نهایی", iconText = "📋",
+                        gradientColors = listOf(colors.accent, colors.accent.copy(alpha = 0.7f)),
+                        modifier = Modifier.weight(1f),
+                        onClick = { viewModel.finalizeDay { success -> Toast.makeText(context, if(success) "ثبت نهایی شد" else "خطا", Toast.LENGTH_SHORT).show() } }
                     )
                 }
-
-                GradientButton(
-                    text = "تایید و ثبت نهایی", iconText = "📋",
-                    gradientColors = listOf(colors.accent, colors.accent.copy(alpha = 0.7f)),
-                    modifier = Modifier.fillMaxWidth(),
-                    onClick = { viewModel.finalizeDay { success -> Toast.makeText(context, if(success) "ثبت نهایی شد" else "خطا", Toast.LENGTH_SHORT).show() } }
-                )
             }
+
+            Spacer(modifier = Modifier.height(32.dp))
         }
     }
 
-    // --- Dialogs ---
-    if (showAddDialog) {
-        AddStudentDialog(
-            onDismiss = { showAddDialog = false },
-            onAdd = { name, phone, className, school, field ->
-                viewModel.addStudent(name, phone, className, school, field)
-                showAddDialog = false
-            }
+    // --- All Dialogs ---
+    if (showStudentSelectDialog) {
+        SelectStudentDialog(
+            students = uiState.students,
+            selectedId = uiState.selectedStudentId,
+            onSelect = { id -> viewModel.selectStudent(id); showStudentSelectDialog = false },
+            onProfile = { student -> selectedProfileStudent = student },
+            onDismiss = { showStudentSelectDialog = false }
         )
+    }
+
+    if (showShiftSelectDialog) {
+        SelectShiftDialog(
+            shifts = uiState.shifts,
+            activeShiftId = uiState.activeShiftId,
+            onSelect = { id -> viewModel.selectShift(id); showShiftSelectDialog = false },
+            onDismiss = { showShiftSelectDialog = false }
+        )
+    }
+
+    if (showAddDialog) {
+        AddStudentDialog(onDismiss = { showAddDialog = false }, onAdd = { name, phone, className, school, field -> viewModel.addStudent(name, phone, className, school, field); showAddDialog = false })
     }
 
     if (showSettingsDialog) {
-        SettingsDialog(
-            currentTemplateIn = uiState.smsTemplateIn,
-            currentTemplateOut = uiState.smsTemplateOut,
-            currentTheme = uiState.themeName,
-            onThemeChange = { theme -> viewModel.changeTheme(theme) },
-            onDismiss = { showSettingsDialog = false },
-            onSaveTemplates = { inT, outT -> viewModel.saveSmsTemplates(inT, outT); showSettingsDialog = false },
-            onClearData = {
-                viewModel.clearAllData { Toast.makeText(context, "تمام داده‌ها پاک شدند", Toast.LENGTH_SHORT).show() }
-                showSettingsDialog = false
-            }
-        )
+        SettingsDialog(currentTemplateIn = uiState.smsTemplateIn, currentTemplateOut = uiState.smsTemplateOut, currentTheme = uiState.themeName, onThemeChange = { theme -> viewModel.changeTheme(theme) }, onDismiss = { showSettingsDialog = false }, onSaveTemplates = { inT, outT -> viewModel.saveSmsTemplates(inT, outT); showSettingsDialog = false }, onClearData = { viewModel.clearAllData { Toast.makeText(context, "تمام داده‌ها پاک شدند", Toast.LENGTH_SHORT).show() }; showSettingsDialog = false })
     }
 
-    if (showShiftsDialog) {
-        ManageShiftsDialog(
-            shifts = uiState.shifts,
-            onDismiss = { showShiftsDialog = false },
-            onAddShift = { time -> viewModel.addShift(time) },
-            onUpdateShift = { id, time -> viewModel.updateShift(id, time) },
-            onDeleteShift = { id -> viewModel.deleteShift(id) }
-        )
+    if (showShiftsManagerDialog) {
+        ManageShiftsDialog(shifts = uiState.shifts, onDismiss = { showShiftsManagerDialog = false }, onAddShift = { time -> viewModel.addShift(time) }, onUpdateShift = { id, time -> viewModel.updateShift(id, time) }, onDeleteShift = { id -> viewModel.deleteShift(id) })
     }
 
     if (showHistoryDialog) {
-        HistoryDialog(
-            historyData = uiState.history,
-            onDismiss = { showHistoryDialog = false }
-        )
+        HistoryDialog(historyData = uiState.history, onDismiss = { showHistoryDialog = false })
     }
 
     if (selectedProfileStudent != null) {
-        StudentProfileDialog(
-            student = selectedProfileStudent!!,
-            onDismiss = { selectedProfileStudent = null }
-        )
+        StudentProfileDialog(student = selectedProfileStudent!!, onDismiss = { selectedProfileStudent = null })
     }
 }
 
 // ==========================================
-// DIALOGS
+// SELECTION DIALOGS
+// ==========================================
+
+@Composable
+fun SelectStudentDialog(
+    students: List<StudentUiModel>,
+    selectedId: String?,
+    onSelect: (String) -> Unit,
+    onProfile: (StudentUiModel) -> Unit,
+    onDismiss: () -> Unit
+) {
+    val colors = LocalAppColors.current
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = colors.background,
+        title = { Text("انتخاب دانش‌آموز", color = colors.textPrimary, modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Right) },
+        text = {
+            if (students.isEmpty()) {
+                Text("لیست خالی است. ابتدا دانش‌آموز اضافه کنید.", color = colors.textPrimary, modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Right)
+            } else {
+                LazyColumn(
+                    modifier = Modifier.heightIn(max = 350.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    items(students) { student ->
+                        val isSelected = student.id == selectedId
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(if (isSelected) colors.accent.copy(alpha = 0.2f) else colors.glassSurface, RoundedCornerShape(10.dp))
+                                .border(1.dp, if (isSelected) colors.accent else Color.Transparent, RoundedCornerShape(10.dp))
+                                .clickable { onSelect(student.id) }
+                                .padding(horizontal = 12.dp, vertical = 10.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
+                                Text(student.name, color = colors.textPrimary, fontSize = 14.sp, fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal)
+
+                                // Badge Logic including Check-Out status
+                                val statusBadge = when {
+                                    student.currentCheckOut != null -> "خارج شده (${student.currentCheckOut})" to colors.textPrimary
+                                    student.currentStatus == "PRESENT" -> "حاضر" to colors.success
+                                    student.currentStatus == "ABSENT" -> "غایب" to colors.alert
+                                    student.currentStatus == "LATE" -> "تاخیر" to Color(0xFFFFC400)
+                                    else -> null
+                                }
+                                if (statusBadge != null) {
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Box(modifier = Modifier.background(statusBadge.second.copy(alpha = 0.2f), RoundedCornerShape(4.dp)).padding(horizontal = 6.dp, vertical = 2.dp)) {
+                                        Text(statusBadge.first, color = statusBadge.second, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                                    }
+                                }
+                            }
+                            Box(
+                                modifier = Modifier.size(24.dp).background(colors.textPrimary.copy(alpha = 0.1f), CircleShape).clickable { onProfile(student) },
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text("ℹ️", fontSize = 12.sp)
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = { TextButton(onClick = onDismiss) { Text("بستن", color = colors.textPrimary) } }
+    )
+}
+
+@Composable
+fun SelectShiftDialog(
+    shifts: List<ShiftUiModel>,
+    activeShiftId: String?,
+    onSelect: (String) -> Unit,
+    onDismiss: () -> Unit
+) {
+    val colors = LocalAppColors.current
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = colors.background,
+        title = { Text("انتخاب شیفت فعال", color = colors.textPrimary, modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Right) },
+        text = {
+            if (shifts.isEmpty()) {
+                Text("هیچ شیفتی ثبت نشده است.", color = colors.textPrimary, modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Right)
+            } else {
+                LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    items(shifts) { shift ->
+                        val isActive = shift.id == activeShiftId
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(if (isActive) colors.accent.copy(alpha = 0.2f) else colors.glassSurface, RoundedCornerShape(8.dp))
+                                .border(1.dp, if (isActive) colors.accent else Color.Transparent, RoundedCornerShape(8.dp))
+                                .clickable { onSelect(shift.id) }
+                                .padding(16.dp)
+                        ) {
+                            Text(shift.time, color = if (isActive) colors.accent else colors.textPrimary, fontSize = 14.sp, fontWeight = if (isActive) FontWeight.Bold else FontWeight.Normal, modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Right)
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = { TextButton(onClick = onDismiss) { Text("بستن", color = colors.textPrimary) } }
+    )
+}
+
+// ==========================================
+// OTHER DIALOGS
 // ==========================================
 
 @Composable
@@ -293,7 +375,6 @@ fun SettingsDialog(
                 modifier = Modifier.verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                // Theme Selection
                 Text("انتخاب تم رنگی:", color = colors.textPrimary, fontSize = 14.sp, fontWeight = FontWeight.Bold)
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -306,7 +387,6 @@ fun SettingsDialog(
 
                 Divider(color = colors.textPrimary.copy(alpha = 0.2f))
 
-                // SMS Templates
                 Text("قالب پیامک ورود:", color = colors.textPrimary, fontSize = 14.sp)
                 OutlinedTextField(
                     value = templateIn,

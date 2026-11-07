@@ -23,7 +23,7 @@ fun DashboardStatsRow(stats: DashboardStats, modifier: Modifier = Modifier) {
     val colors = LocalAppColors.current
     Row(
         modifier = modifier.fillMaxWidth().padding(horizontal = 16.dp),
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         StatCard("حاضرین", toPersianDigits(stats.presentCount.toString()), "✔", colors.success, Modifier.weight(1f))
         StatCard("غایبین", toPersianDigits(stats.absentCount.toString()), "✖", colors.alert, Modifier.weight(1f))
@@ -35,15 +35,16 @@ fun DashboardStatsRow(stats: DashboardStats, modifier: Modifier = Modifier) {
 fun StatCard(title: String, value: String, iconSymbol: String, accentColor: Color, modifier: Modifier = Modifier) {
     val colors = LocalAppColors.current
     GlassCard(modifier = modifier, borderColor = accentColor.copy(alpha = 0.4f)) {
-        Column(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(text = iconSymbol, color = accentColor, fontSize = 24.sp, fontWeight = FontWeight.Bold)
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(text = value, color = colors.textPrimary, fontSize = 24.sp, fontWeight = FontWeight.ExtraBold)
-            Text(text = title, color = colors.textPrimary.copy(alpha = 0.7f), fontSize = 12.sp)
+            Text(text = iconSymbol, color = accentColor, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+            Column(horizontalAlignment = Alignment.End) {
+                Text(text = value, color = colors.textPrimary, fontSize = 18.sp, fontWeight = FontWeight.ExtraBold)
+                Text(text = title, color = colors.textPrimary.copy(alpha = 0.7f), fontSize = 10.sp)
+            }
         }
     }
 }

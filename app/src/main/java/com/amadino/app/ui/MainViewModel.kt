@@ -21,7 +21,9 @@ import java.util.Locale
 
 data class StudentUiModel(
     val id: String, val name: String, val phone: String,
-    val className: String, val school: String, val field: String
+    val className: String, val school: String, val field: String,
+    val currentStatus: String? = null, // PRESENT, ABSENT, LATE
+    val currentCheckOut: String? = null // Time of check-out
 )
 data class ShiftUiModel(val id: String, val time: String)
 data class HistoryRecordUiModel(val studentName: String, val status: String, val time: String)
@@ -33,9 +35,10 @@ data class MainUiState(
     val shifts: List<ShiftUiModel> = emptyList(),
     val history: List<HistoryDateUiModel> = emptyList(),
     val selectedStudentId: String? = null,
+    val activeShiftId: String? = null,
     val smsTemplateIn: String = "",
     val smsTemplateOut: String = "",
-    val themeName: String = "CyberViolet", // Added Theme State
+    val themeName: String = "CyberViolet",
     val isLoading: Boolean = true
 )
 
@@ -59,11 +62,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             val templates = withContext(Dispatchers.IO) { userDataManager.getSmsTemplates() }
             val currentTheme = withContext(Dispatchers.IO) { userDataManager.getThemeName() }
 
-            var present = 0; var absent = 0; var sms = 0
-            val studentList = mutableListOf<StudentUiModel>()
             val shiftList = mutableListOf<ShiftUiModel>()
-            val historyMap = mutableMapOf<String, MutableList<HistoryRecordUiModel>>()
-
             if (shiftsArray != null) {
                 for (i in 0 until shiftsArray.length()) {
                     val shift = shiftsArray.getJSONObject(i)
@@ -71,17 +70,38 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 }
             }
 
+            val currentActiveShift = _uiState.value.activeShiftId ?: shiftList.firstOrNull()?.id
+            val activeShiftTime = shiftList.find { it.id == currentActiveShift }?.time
+
+            var present = 0; var absent = 0; var sms = 0
+            val studentList = mutableListOf<StudentUiModel>()
+            val historyMap = mutableMapOf<String, MutableList<HistoryRecordUiModel>>()
+
             if (studentsArray != null) {
                 for (i in 0 until studentsArray.length()) {
                     val std = studentsArray.getJSONObject(i)
                     val studentName = std.optString("name")
+                    val attendance = std.optJSONObject("attendance")
+
+                    var statusForActiveShift: String? = null
+                    var checkOutForActiveShift: String? = null
+
+                    if (activeShiftTime != null) {
+                        val slot = attendance?.optJSONObject(today)?.optJSONObject(activeShiftTime)
+                        statusForActiveShift = slot?.optString("status")
+                        val outTime = slot?.optString("check_out_time")
+                        if (outTime != null && outTime != "null" && outTime.isNotEmpty()) {
+                            checkOutForActiveShift = outTime
+                        }
+                    }
 
                     studentList.add(StudentUiModel(
                         id = std.optString("id"), name = studentName, phone = std.optString("parent_phone"),
-                        className = std.optString("class_name", "نامشخص"), school = std.optString("school", "نامشخص"), field = std.optString("field", "نامشخص")
+                        className = std.optString("class_name", "نامشخص"), school = std.optString("school", "نامشخص"), field = std.optString("field", "نامشخص"),
+                        currentStatus = statusForActiveShift,
+                        currentCheckOut = checkOutForActiveShift
                     ))
 
-                    val attendance = std.optJSONObject("attendance")
                     if (attendance != null) {
                         val dates = attendance.keys()
                         while (dates.hasNext()) {
@@ -107,7 +127,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                                     val slotData = dayRecord.getJSONObject(slotTime)
                                     val status = slotData.optString("status")
 
-                                    if (status != "NOT_RECORDED") {
+                                    if (status != "NOT_RECORDED" && status.isNotEmpty()) {
                                         val statusFa = when(status) {
                                             "PRESENT" -> "حاضر"
                                             "ABSENT" -> "غایب"
@@ -135,38 +155,36 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     students = studentList,
                     shifts = shiftList,
                     history = historyList,
+                    activeShiftId = currentActiveShift,
                     smsTemplateIn = templates.first,
                     smsTemplateOut = templates.second,
-                    themeName = currentTheme, // Apply Theme
+                    themeName = currentTheme,
                     isLoading = false
                 )
             }
         }
     }
 
-    fun changeTheme(themeName: String) {
-        viewModelScope.launch {
-            withContext(Dispatchers.IO) { userDataManager.saveThemeName(themeName) }
-            loadData()
-        }
+    fun selectShift(shiftId: String) {
+        _uiState.update { it.copy(activeShiftId = shiftId) }
+        loadData()
     }
 
-    // ... (بقیه متدهای شیفت، ورود/خروج، پیامک و غیره دقیقاً مانند قبل هستند)
-    fun addShift(time: String) { viewModelScope.launch { withContext(Dispatchers.IO) { userDataManager.addShift(time) }; loadData() } }
-    fun updateShift(id: String, newTime: String) { viewModelScope.launch { withContext(Dispatchers.IO) { userDataManager.updateShift(id, newTime) }; loadData() } }
-    fun deleteShift(id: String) { viewModelScope.launch { withContext(Dispatchers.IO) { userDataManager.deleteShift(id) }; loadData() } }
-    fun selectStudent(id: String?) { _uiState.update { it.copy(selectedStudentId = id) } }
+    fun selectStudent(id: String?) {
+        _uiState.update { it.copy(selectedStudentId = id) }
+    }
 
     fun performAction(action: String) {
         val studentId = _uiState.value.selectedStudentId ?: return
+        val activeShiftId = _uiState.value.activeShiftId ?: return
+        val activeShiftTime = _uiState.value.shifts.find { it.id == activeShiftId }?.time ?: return
+
         val today = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
-        val currentSlot = _uiState.value.shifts.firstOrNull()?.time ?: "08:00 - 09:00"
+        val currentTime = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
+
         viewModelScope.launch {
             withContext(Dispatchers.IO) {
-                when (action) {
-                    "CHECK_IN" -> userDataManager.updateStudentStatus(studentId, today, currentSlot, "PRESENT")
-                    "CHECK_OUT" -> userDataManager.updateStudentStatus(studentId, today, currentSlot, "ABSENT")
-                }
+                userDataManager.updateAttendance(studentId, today, activeShiftTime, action, currentTime)
             }
             loadData()
         }
@@ -174,8 +192,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun sendSmsToSelected(smsType: String, onResult: (String) -> Unit) {
         val student = _uiState.value.students.find { it.id == _uiState.value.selectedStudentId } ?: return
+        val activeShiftId = _uiState.value.activeShiftId ?: return
+        val activeShiftTime = _uiState.value.shifts.find { it.id == activeShiftId }?.time ?: return
+
         val today = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
-        val currentSlot = _uiState.value.shifts.firstOrNull()?.time ?: "08:00 - 09:00"
         val currentTime = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
         val jalaliDate = getCurrentJalaliDate()
         val template = if (smsType == "IN") _uiState.value.smsTemplateIn else _uiState.value.smsTemplateOut
@@ -184,7 +204,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             val result = withContext(Dispatchers.IO) { smsSender.send(student.phone, finalMessage) }
             if (result is SmsSendResult.Success) {
-                withContext(Dispatchers.IO) { userDataManager.updateSmsStatus(student.id, today, currentSlot, "SENT") }
+                withContext(Dispatchers.IO) { userDataManager.updateSmsStatus(student.id, today, activeShiftTime, "SENT") }
                 loadData()
                 onResult("پیامک با موفقیت ارسال شد")
             } else {
@@ -193,18 +213,22 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    fun changeTheme(themeName: String) {
+        viewModelScope.launch { withContext(Dispatchers.IO) { userDataManager.saveThemeName(themeName) }; loadData() }
+    }
+
+    fun addShift(time: String) { viewModelScope.launch { withContext(Dispatchers.IO) { userDataManager.addShift(time) }; loadData() } }
+    fun updateShift(id: String, newTime: String) { viewModelScope.launch { withContext(Dispatchers.IO) { userDataManager.updateShift(id, newTime) }; loadData() } }
+    fun deleteShift(id: String) { viewModelScope.launch { withContext(Dispatchers.IO) { userDataManager.deleteShift(id) }; loadData() } }
     fun addStudent(name: String, phone: String, className: String, school: String, field: String) {
         viewModelScope.launch { withContext(Dispatchers.IO) { userDataManager.addStudent(name, phone, className, school, field) }; loadData() }
     }
-
     fun saveSmsTemplates(templateIn: String, templateOut: String) {
         viewModelScope.launch { withContext(Dispatchers.IO) { userDataManager.saveSmsTemplates(templateIn, templateOut) }; loadData() }
     }
-
     fun clearAllData(onComplete: () -> Unit) {
         viewModelScope.launch { withContext(Dispatchers.IO) { userDataManager.clearAllData() }; loadData(); onComplete() }
     }
-
     fun finalizeDay(onComplete: (Boolean) -> Unit) {
         val today = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
         viewModelScope.launch {

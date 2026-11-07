@@ -25,7 +25,7 @@ class UserDataManager(private val context: Context) {
                 put("settings", JSONObject().apply {
                     put("sms_template_in", defaultTemplateIn)
                     put("sms_template_out", defaultTemplateOut)
-                    put("theme_name", "CyberViolet") // Default Theme
+                    put("theme_name", "CyberViolet")
                 })
                 put("shifts", JSONArray().apply { put(JSONObject().apply { put("id", UUID.randomUUID().toString()); put("time", "08:00 - 09:00") }) })
                 put("students", JSONArray())
@@ -117,7 +117,8 @@ class UserDataManager(private val context: Context) {
         if (file.exists()) file.delete()
     }
 
-    suspend fun updateStudentStatus(studentId: String, date: String, slot: String, status: String) {
+    // Updated attendance logic to handle IN, OUT, ABSENT separately
+    suspend fun updateAttendance(studentId: String, date: String, slot: String, action: String, currentTime: String) {
         val users = readUsers()
         val students = users.optJSONArray("students") ?: return
         for (i in 0 until students.length()) {
@@ -127,11 +128,23 @@ class UserDataManager(private val context: Context) {
                 val dayRecord = attendance.optJSONObject(date) ?: JSONObject().also { attendance.put(date, it) }
                 val slotRecord = dayRecord.optJSONObject(slot) ?: JSONObject().also { dayRecord.put(slot, it) }
 
-                slotRecord.put("status", status)
-                if (status == "PRESENT") slotRecord.put("check_in_time", "08:05")
-                if (status == "ABSENT") {
-                    slotRecord.put("check_in_time", JSONObject.NULL)
-                    slotRecord.put("check_out_time", JSONObject.NULL)
+                when (action) {
+                    "CHECK_IN" -> {
+                        slotRecord.put("status", "PRESENT")
+                        slotRecord.put("check_in_time", currentTime)
+                    }
+                    "CHECK_OUT" -> {
+                        // Preserve status, just add check out time
+                        if (slotRecord.optString("status") == "NOT_RECORDED" || slotRecord.optString("status").isEmpty()) {
+                            slotRecord.put("status", "PRESENT") // If they check out without checking in
+                        }
+                        slotRecord.put("check_out_time", currentTime)
+                    }
+                    "MARK_ABSENT" -> {
+                        slotRecord.put("status", "ABSENT")
+                        slotRecord.put("check_in_time", JSONObject.NULL)
+                        slotRecord.put("check_out_time", JSONObject.NULL)
+                    }
                 }
             }
         }
@@ -174,7 +187,9 @@ class UserDataManager(private val context: Context) {
             val keys = attendance.keys()
             while (keys.hasNext()) {
                 val slot = attendance.getJSONObject(keys.next())
-                if (slot.optString("status") == "NOT_RECORDED") slot.put("status", "ABSENT")
+                if (slot.optString("status") == "NOT_RECORDED" || slot.optString("status").isEmpty()) {
+                    slot.put("status", "ABSENT")
+                }
             }
         }
         writeUsers(users)
