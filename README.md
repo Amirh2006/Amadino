@@ -1,135 +1,182 @@
-# آمادینو (Amadino)
+<div align="center">
 
-Offline-first student management for small institutes: weekly shifts, class-time
-attendance, SMS notifications to parents, tuition/payment tracking and reports.
-Everything is stored locally in Room — no server, no account, no internet
-permission.
+<!-- 🖼️ لوگوی پروژه -->
+<img src="docs/assets/logo.png" alt="Amadino Logo" width="250"/>
 
-## Features
+# 📚 آمادینو | Amadino
+**سیستم هوشمند مدیریت حضور و غیاب و ارسال پیامک خودکار | Smart Attendance & Automated SMS System**
 
-- **Dashboard** — Persian week strip (school days highlighted), active shifts for
-  the selected day, persistent SMS counter, quick actions.
-- **Schedule management** — toggle school days, CRUD shifts per day and the
-  class-time bell schedule per shift (validated time ranges).
-- **Students** — searchable list, create/edit form with inline validation
-  (required fields, Iranian mobile format, Toman amounts), success feedback
-  on save, soft `isActive` flag.
-- **Attendance** — shift → class time → student rows with Present / Late /
-  Absent, bulk mark-all, upsert per `(student, class time, date)` so re-saving
-  never duplicates rows.
-- **SMS** — ENTRY prompt after saving attendance, manual EXIT action, automatic
-  fallback from mobile 1 to mobile 2, per-message log with status chips,
-  failure reasons and delivery reports, retry for failed/skipped messages
-  (with a permission prompt), editable templates with live preview,
-  sent/failed/skipped counter.
-- **Finance** — debtor list and payment recording that lowers the student's debt.
-- **Reports** — student counts, today's attendance breakdown, financial totals,
-  SMS totals.
-- **Backup** — export every table to a JSON file via the system file picker and
-  restore it later; no cloud, no storage permission, ids preserved.
+[![Platform](https://img.shields.io/badge/Platform-Android-brightgreen.svg?style=for-the-badge&logo=android)](https://developer.android.com)
+[![Language](https://img.shields.io/badge/Language-Kotlin-blue.svg?style=for-the-badge&logo=kotlin)](https://kotlinlang.org)
+[![UI](https://img.shields.io/badge/UI-Jetpack%20Compose-4285F4.svg?style=for-the-badge&logo=jetpackcompose)](https://developer.android.com/jetpack/compose)
+[![Version](https://img.shields.io/badge/Version-1.2.4-purple.svg?style=for-the-badge)]()
+[![License](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
 
-## Design (v1.1.0)
+### 🌐 انتخاب زبان | Choose Language
+**[🇬🇧 English Version](#-english-version)** | **[🇮🇷 نسخه فارسی](#-نسخه-فارسی)**
 
-| Role | Hex | Usage |
-|------|-----|-------|
-| Primary / Dark surface | `#0B1426` | App bar, dark backgrounds, text on accent |
-| Secondary / glassmorphism | `#00E5FF` | Primary action buttons, accents |
-| Tertiary / success | `#39E079` | Secondary actions, success states |
-| Dark BG | `#070D19` | Main background |
-| Cards | `#131E32` | Cards, panels, containers |
-| Light BG | `#F4F6F9` | Light theme background |
-| Surface text | `#FFFFFF` | Primary text on dark |
-| Typography | `#94A3BB` | Secondary text, hints |
+</div>
 
-The app icon uses the secondary cyan (`#00E5FF`) and tertiary green (`#39E079`)
-on a dark background (`#070D19`).
+---
 
-## Tech stack
+<div dir="ltr" id="english-version">
 
-| Area | Choice |
-|------|--------|
-| Language | Kotlin 2.4.21 |
-| UI | Jetpack Compose (BOM 2026.09.00), Material 3, RTL |
-| Architecture | Single Activity, Navigation-Compose, ViewModel + StateFlow, Repository |
-| Persistence | Room 2.8.5 via KSP (no KAPT) |
-| Async | Coroutines + Flow |
-| SMS | `android.telephony.SmsManager` + runtime `SEND_SMS` |
-| DI | Manual `AppContainer` (no Hilt) |
-| Build | AGP 9.4.1, Gradle 9.6.0, JDK 17, minSdk 26, targetSdk 36 |
+## 🇬🇧 English Version
 
-## Architecture
+### 🌟 About The Project
+**Amadino** is a native, **Offline-First** Android application designed to simplify the management of small and medium educational institutes. Unlike many similar apps, Amadino stores all student data, attendance records, and settings locally on the device with high security. No servers, no internet required. Built with modern Android technologies and focusing on **Glassmorphism UI** and a seamless user experience.
 
-```
-UI (Compose) → ViewModel (StateFlow) → Repository → Room DAO
-                                     ↘ UseCase → SmsSender → SmsManager
-```
+### ✨ Features
+- **🎨 Dynamic UI/UX:** Supports 3 beautiful themes (Cyber Violet, Solar Dawn, Emerald Matrix) with Glassmorphism effects.
+- **📋 Smart Attendance:** Record check-in, check-out, and absences independently per class shift.
+- **✉️ Automated SMS:** Dynamically generated SMS templates for parents with variables like `{name}`, `{date}`, and `{time}`.
+- **📊 Data & Reports:** Secure local JSON storage, History logs, and Excel (CSV) export.
+- **🌍 RTL Support:** Fully optimized for Persian (Farsi) language, featuring the Jalali calendar and Persian digits.
 
-```
+### 🛠️ Tech Stack
+- **Language:** Kotlin
+- **UI Framework:** Jetpack Compose (Material 3)
+- **Architecture:** MVVM (Model-View-ViewModel)
+- **Async Processing:** Kotlin Coroutines & StateFlow
+- **Local Database:** JSON File (with Atomic Writes & Mutex Locks)
+- **SMS API:** Android `SmsManager`
+
+### 🚀 Installation
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/Amirh2006/Amadino.git
+Open the project in Android Studio.
+
+Build and install on your connected device:
+
+bash
+./gradlew installDebug
+📖 Usage
+Open the app and go to Settings to choose your preferred theme.
+
+Go to Manage Shifts to define your class times (e.g., 08:00 - 09:00).
+
+Tap the + button to add a new student (Name, Parent Phone, Class, etc.).
+
+From the main dashboard, tap the Shift Card to select the active shift, and tap the Student Card to select a student.
+
+Use the action buttons to Check-In, Check-Out, or mark as Absent.
+
+Use the SMS buttons to automatically notify parents.
+
+Go to History to view past records and export them to CSV.
+
+</div>
+<div dir="rtl" id="نسخه-فارسی">
+🇮🇷 نسخه فارسی
+🌟 درباره برنامه
+آمادینو (Amadino) یک اپلیکیشن اندروید بومی (Native) و کاملاً آفلاین (Offline-First) است که با هدف حل چالش‌های مدیریتی موسسات آموزشی کوچک و متوسط طراحی شده است. برخلاف بسیاری از نرم‌افزارهای مشابه، آمادینو تمامی اطلاعات دانش‌آموزان، سوابق حضور و غیاب و تنظیمات را به صورت محلی و با بالاترین سطح امنیت روی دستگاه شما ذخیره می‌کند و هیچ‌گونه نیازی به سرور یا اتصال به اینترنت ندارد. این پروژه با تکیه بر طراحی مدرن (Glassmorphism) و رابط کاربری کاملاً راست‌چین، تجربه‌ای روان را برای مدیران آموزشی فراهم می‌کند.
+
+✨ قابلیت‌ها
+🎨 طراحی داینامیک: پشتیبانی از ۳ تم رنگی (بنفش سایبری، روشن خورشیدی، سبز ماتریکس) به همراه افکت‌های شیشه‌ای.
+
+📋 مدیریت حضور و غیاب: ثبت دقیق وضعیت (ورود، خروج، غایب) به تفکیک شیفت‌های کلاسی بدون تداخل داده‌ها.
+
+✉️ پیامک خودکار: ارسال پیامک به والدین با قالب‌های داینامیک (متغیرهای نام، تاریخ و ساعت).
+
+📊 گزارش‌گیری: ذخیره‌سازی امن با فایل JSON، صفحه تاریخچه و خروجی فایل اکسل (CSV).
+
+🇮🇷 طراحی بومی: کاملاً راست‌چین، همراه با تقویم شمسی دقیق و ساعت دیجیتال با اعداد فارسی.
+
+🛠️ تکنولوژی‌های استفاده شده
+زبان: Kotlin
+
+رابط کاربری (UI): Jetpack Compose (Material 3)
+
+معماری: MVVM (Model-View-ViewModel)
+
+مدیریت State: Kotlin Coroutines & StateFlow
+
+دیتابیس: Local JSON File (مجهز به Mutex و Atomic Writes)
+
+سیستم پیامک: Android SmsManager
+
+🚀 نصب و راه‌اندازی
+مخزن را کلون کنید:
+
+bash
+git clone https://github.com/Amirh2006/Amadino.git
+پروژه را در Android Studio باز کنید.
+
+برای ساخت و نصب مستقیم روی گوشی متصل شده:
+
+bash
+./gradlew installDebug
+📖 نحوه کاربرد
+وارد برنامه شوید و از بخش تنظیمات تم دلخواه خود را انتخاب کنید.
+
+به بخش مدیریت شیفت‌ها بروید و زنگ‌های کلاسی (مثلاً 08:00 - 09:00) را تعریف کنید.
+
+با زدن دکمه + یک دانش‌آموز جدید (نام، شماره والدین، کلاس و...) اضافه کنید.
+
+در صفحه اصلی، روی کارت شیفت بزنید تا شیفت فعال انتخاب شود، و روی کارت دانش‌آموز بزنید تا فرد مورد نظر انتخاب شود.
+
+از دکمه‌های عملیات برای ثبت ورود، ثبت خروج یا ثبت غیبت استفاده کنید.
+
+با دکمه‌های پیامک می‌توانید به صورت خودکار به والدین اطلاع‌رسانی کنید.
+
+به بخش تاریخچه بروید تا سوابق را ببینید و خروجی اکسل بگیرید.
+
+</div>
+🏗️ معماری پروژه (Project Architecture)
+<div dir="ltr">
+text
 com.amadino.app
-├── data/
-│   ├── local/      Room database, entities, DAOs, converters
-│   ├── repository/ Student, Shift, Attendance, Sms, SmsTemplate, Finance
-│   ├── backup/     BackupManager (JSON export/import)
-│   └── sms/        SmsSender, SmsSentReceiver, SmsResultBus, SmsTemplates
-├── domain/
-│   ├── model/      SmsEventType
-│   ├── usecase/    SendSmsUseCase
-│   └── validation/ StudentValidator, ScheduleValidator
-├── di/             AppContainer, ViewModel factory
-└── ui/             theme, navigation, dashboard, students, attendance,
-                    finance, reports, sms, settings, components
-```
+│
+├── 📂 data                  # Data Layer
+│   ├── 📂 local             # JSON Management (UserDataManager)
+│   └── 📂 sms               # SMS Service (SmsSender)
+│
+├── 📂 domain                # Domain Layer
+│   ├── 📂 model             # Data Models (Student, Attendance)
+│   └── 📂 usecase           # Business Logic (SendSmsUseCase)
+│
+├── 📂 ui                    # Presentation Layer
+│   ├── 📂 components        # Reusable UI (GlassCard, Buttons)
+│   ├── 📂 theme             # Dynamic Themes & Colors
+│   └── 📂 MainViewModel.kt  # State Management
+│
+└── 📂 utils                 # Helpers (DateUtils, CsvExporter)
+</div>
+📸 تصاویر برنامه (Screenshots)
+<div align="center"> <!-- 🖼️ اسکرین‌شات‌های برنامه را با این نام‌ها در پوشه docs/assets قرار دهید --> <img src="docs/assets/screenshot_home.png" alt="Dashboard" width="250" style="border-radius: 12px; margin: 10px;"/> <img src="docs/assets/screenshot_dark.png" alt="Cyber Violet Theme" width="250" style="border-radius: 12px; margin: 10px;"/> <img src="docs/assets/screenshot_light.png" alt="Solar Dawn Theme" width="250" style="border-radius: 12px; margin: 10px;"/> </div>
+🤝 درخواست همکاری برای توسعه (Call for Contribution)
+ما از هرگونه همکاری در توسعه این پروژه استقبال می‌کنیم! اگر ایده‌ای برای بهبود برنامه دارید یا می‌خواهید ویژگی جدیدی اضافه کنید، لطفاً این مراحل را دنبال کنید:
 
-Design documents live in [`docs/design/`](docs/design/):
+پروژه را Fork کنید.
 
-- [3. UI/UX & architecture](docs/design/3-ui-ux-architecture.md)
-- [7. SMS sending architecture](docs/design/7-sms-sending.md)
-- [9. Schedule management](docs/design/9-schedule-management.md)
-- [10. SMS templates & retry](docs/design/10-sms-settings-and-retry.md)
-- [11. Delivery reports & permission-aware retry](docs/design/11-delivery-reports.md)
-- [12. Backup & restore](docs/design/12-backup-and-restore.md)
-- [13. Visual design v1.1.0](docs/design/13-visual-design-v110.md)
+یک شاخه (Branch) جدید بسازید: git checkout -b feature/NewFeature
 
-Requirements are consolidated in
-[`docs/requirements/2.5-consolidated-requirements.md`](docs/requirements/2.5-consolidated-requirements.md).
+تغییرات خود را کامیت کنید: git commit -m "Add NewFeature"
 
-## Build
+شاخه را پوش کنید: git push origin feature/NewFeature
 
-Requirements: JDK 17+ and an Android SDK with platform 37 (`compileSdk 37`).
+یک Pull Request ارسال کنید تا تغییرات شما بررسی و با شاخه اصلی (develop) ادغام شود.
 
-```powershell
-# Debug APK → app/build/outputs/apk/debug/app-debug.apk
-.\gradlew.bat :app:assembleDebug
+🐛 گزارش باگ و مشکلات (Bug Reporting)
+ما به کیفیت برنامه اهمیت می‌دهیم. اگر در حین استفاده با خطا، کرش یا رفتار غیرمنتظره‌ای مواجه شدید:
 
-# Unit tests
-.\gradlew.bat :app:testDebugUnitTest
+لطفاً به بخش Issues در مخزن گیت‌هاب ما بروید.
 
-# Release APK (R8 + resource shrinking) → app/build/outputs/apk/release/
-.\gradlew.bat :app:assembleRelease
-```
+یک New Issue ایجاد کنید.
 
-### Release signing
+مشکل را با جزئیات کامل (نسخه اندروید، مراحل بازتولید باگ، و در صورت امکان اسکرین‌شات) توضیح دهید تا در اسرع وقت بررسی و رفع شود.
 
-Create `keystore.properties` in the project root (git-ignored):
+👨‍💻 نویسنده (Author)
+این پروژه با عشق و علاقه توسط امیرحسین پورشریفی (Amirhossein Porsharifi) طراحی و توسعه داده شده است.
 
-```properties
-storeFile=C:\\path\\to\\release.jks
-storePassword=…
-keyAlias=…
-keyPassword=…
-```
+GitHub: @Amirh2006
 
-Without that file `assembleRelease` produces an unsigned APK.
+📬 ارتباط با ما (Contact Us)
+اگر سوالی دارید، می‌خواهید بازخورد بدهید یا پیشنهاد همکاری تجاری دارید، می‌توانید از راه‌های زیر با ما در ارتباط باشید:
 
-## Data & privacy
+ایمیل: amir.h.porsharifi@gmail.com
 
-- All data stays on the device (Room/SQLite).
-- The only privileged capability is `SEND_SMS`, requested at send time.
-- No analytics, no network calls.
+گیت‌هاب: از طریق بخش Issues یا Discussions در مخزن پروژه.
 
-## Known limitations
-
-- Delivery reports are best-effort; carriers that never send them leave the
-  message in `PENDING`.
-- Class-time ordering uses a numeric `sortOrder` field instead of drag-and-drop.
-- Retrying a message re-sends it with the original timestamp.
+<br/> <div align="center"> <sub>ساخته شده با ❤️ در ایران | Made with ❤️ in Iran</sub> </div> ```
