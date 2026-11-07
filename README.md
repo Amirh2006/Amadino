@@ -63,7 +63,7 @@ com.amadino.app
 
 ### 📸 Screenshots
 <div align="center"> 
-  <img src="docs/assets/screenshot_home.png" alt="Dashboard" width="250" style="border-radius: 12px; margin: 10px;"/> 
+  <img src="docs/assets/screenshot_green.png" alt="Emerald Matrix Theme" width="250" style="border-radius: 12px; margin: 10px;"/> 
   <img src="docs/assets/screenshot_dark.png" alt="Cyber Violet Theme" width="250" style="border-radius: 12px; margin: 10px;"/> 
   <img src="docs/assets/screenshot_light.png" alt="Solar Dawn Theme" width="250" style="border-radius: 12px; margin: 10px;"/> 
 </div>
