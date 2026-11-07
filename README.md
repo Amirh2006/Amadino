@@ -10,8 +10,7 @@
 [![Language](https://img.shields.io/badge/Language-Kotlin-blue.svg?style=for-the-badge&logo=kotlin)](https://kotlinlang.org)
 [![UI](https://img.shields.io/badge/UI-Jetpack%20Compose-4285F4.svg?style=for-the-badge&logo=jetpackcompose)](https://developer.android.com/jetpack/compose)
 [![Version](https://img.shields.io/badge/Version-1.2.4-purple.svg?style=for-the-badge)]()
-[![License](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
-
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg?style=for-the-badge)](https://www.gnu.org/licenses/gpl-3.0)
 ### 🌐 Choose Language | انتخاب زبان
 **[🇬🇧 English Version](#-english-version)** | **[🇮🇷 نسخه فارسی](#-نسخه-فارسی)**
 
@@ -101,6 +100,9 @@ We care about the quality of the app. If you encounter bugs, crashes, or unexpec
 * Please visit the [**Issues**](https://github.com/Amirh2006/Amadino/issues) section in our GitHub repository.
 * Create a **New Issue**.
 * Provide detailed information (Android version, steps to reproduce, and screenshots if possible) so we can fix it ASAP.
+
+### 📄 License
+This project is licensed under the **GNU General Public License v3.0** (GPLv3). See the [LICENSE](LICENSE) file for more details. By contributing or modifying this project, you agree to keep it open-source.
 
 ### 👨‍💻 Author
 This project is designed and developed with ❤️ by **Amirhossein Porsharifi**.
@@ -209,6 +211,9 @@ com.amadino.app
 * لطفاً به بخش [**Issues**](https://github.com/Amirh2006/Amadino/issues) در مخزن گیت‌هاب ما بروید.
 * یک **New Issue** ایجاد کنید.
 * مشکل را با جزئیات کامل (نسخه اندروید، مراحل بازتولید باگ، و در صورت امکان اسکرین‌شات) توضیح دهید تا در اسرع وقت بررسی و رفع شود.
+
+### 📄 لایسنس (License)
+این پروژه تحت لایسنس **GNU GPLv3** منتشر شده است. برای مطالعه جزئیات حقوقی، فایل [LICENSE](LICENSE) را ببینید. طبق این لایسنس، هرگونه تغییر و توزیع مجدد کدهای این پروژه باید به صورت متن‌باز (Open-Source) باقی بماند.
 
 ### 👨‍💻 نویسنده
 این پروژه با عشق و علاقه توسط **امیرحسین پورشریفی (Amirhossein Porsharifi)** طراحی و توسعه داده شده است.
