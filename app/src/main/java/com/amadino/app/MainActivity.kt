@@ -44,7 +44,6 @@ class MainActivity : ComponentActivity() {
         setContent {
             val uiState by viewModel.uiState.collectAsState()
 
-            // Apply Dynamic Theme based on saved state
             AmadinoTheme(themeName = uiState.themeName) {
                 val colors = LocalAppColors.current
                 Surface(modifier = Modifier.fillMaxSize(), color = colors.background) {
@@ -67,7 +66,6 @@ fun MainScreen(viewModel: MainViewModel) {
     var showHistoryDialog by remember { mutableStateOf(false) }
     var selectedProfileStudent by remember { mutableStateOf<StudentUiModel?>(null) }
 
-    // Popup Dialogs for selection
     var showStudentSelectDialog by remember { mutableStateOf(false) }
     var showShiftSelectDialog by remember { mutableStateOf(false) }
 
@@ -91,14 +89,14 @@ fun MainScreen(viewModel: MainViewModel) {
         ) {
             BrandHeader()
 
-            // Top Buttons Row
+            // Top Buttons Row (تنظیم وزن‌ها برای نمایش بهتر)
             Row(
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 GlassButton("تاریخچه", onClick = { showHistoryDialog = true }, modifier = Modifier.weight(1f))
                 GlassButton("تنظیمات", onClick = { showSettingsDialog = true }, modifier = Modifier.weight(1f))
-                GlassButton("مدیریت شیفت‌ها", onClick = { showShiftsManagerDialog = true }, modifier = Modifier.weight(1.2f))
+                GlassButton("مدیریت شیفت‌ها", onClick = { showShiftsManagerDialog = true }, modifier = Modifier.weight(1.5f))
             }
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -106,12 +104,10 @@ fun MainScreen(viewModel: MainViewModel) {
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // --- Selection Panel (Replaces Lists) ---
             Row(
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                // Shift Selector Card
                 GlassCard(modifier = Modifier.weight(1f).clickable { showShiftSelectDialog = true }) {
                     Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
                         Text("شیفت فعال", color = colors.textPrimary.copy(alpha = 0.7f), fontSize = 11.sp)
@@ -125,7 +121,6 @@ fun MainScreen(viewModel: MainViewModel) {
                     }
                 }
 
-                // Student Selector Card
                 GlassCard(modifier = Modifier.weight(1f).clickable { showStudentSelectDialog = true }) {
                     Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
                         Text("دانش‌آموز", color = colors.textPrimary.copy(alpha = 0.7f), fontSize = 11.sp)
@@ -143,7 +138,6 @@ fun MainScreen(viewModel: MainViewModel) {
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Action Buttons
             val isEnabled = uiState.selectedStudentId != null && uiState.activeShiftId != null
             Column(
                 modifier = Modifier.padding(horizontal = 16.dp),
@@ -280,7 +274,6 @@ fun SelectStudentDialog(
                             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
                                 Text(student.name, color = colors.textPrimary, fontSize = 14.sp, fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal)
 
-                                // Badge Logic including Check-Out status
                                 val statusBadge = when {
                                     student.currentCheckOut != null -> "خارج شده (${student.currentCheckOut})" to colors.textPrimary
                                     student.currentStatus == "PRESENT" -> "حاضر" to colors.success
